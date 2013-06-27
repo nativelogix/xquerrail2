@@ -1,0 +1,63 @@
+<config xmlns="http://www.xquerrail-framework.com/config" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.xquerrail-framework.com/domain file:../_framework/schemas/config.xsd"
+    >
+    <!--Configurations-->
+    <routes-config  resource="/_config/routes.xml"/>
+    <routes-module resource="/_framework/routing.xqy"/>
+    
+    <interceptor-config resource="/_config/interceptor.xml"/>
+    <interceptor-module resource="/_framework/interceptor.xqy"/>
+    
+    <environment-config resource="/_config/env.xml"/>
+    
+    <plugin-config resource="/_config/plugin.xml"/>
+    
+    <controller-scripts-directory value="/resources/scripts"/> 
+    <controller-stylesheet-directory value="/resources/stylesheets"/>
+    
+    <error-handler resource="/_framework/error.xqy"/>    
+    
+    <!--Suffix Configuration-->
+    <controller-suffix value="-controller"/>
+    <model-suffix value="-model"/>
+    <library-suffix value="-lib"/>
+
+    <anonymous-user value="anonymous"/> 
+    
+    <dispatcher resource="/_framework/dispatchers/dispatcher.web.xqy"/>
+    
+    <!--Register Default Values for engine-->
+    <default-engine value="engine.html"/>
+    <default-application value="demo"/>
+    <default-controller value="default"/> 
+    <default-action value="index"/>    
+    <default-format value="xml"/>
+    <default-template-directory resource="/application/templates/"/>
+    <default-view-directory resources="/application/views/"/>    
+    
+    <!--Register Your Application Here-->
+    <application name="demo" namespace="http://www.xquerrail-framework.com/demo" uri="/demo">
+        <domain resource="/demo/domains/application-domain.xml" />
+        <script-directory value="/demo/resources/js"/>
+        <stylesheet-directory value="/demo/resources/css"/>
+    </application>
+    <!--
+    <application name="application" namespace="http://my-application-namespace" uri="/application">
+        <domain resource="/application/domains/application-domain.xml" />
+        <script-directory value="/application/resources/js"/>
+        <stylesheet-directory value="/application/resources/css"/>
+    </application>
+    -->
+    <!--Interceptors-->
+    <interceptors config="/_config/interceptor.xml">
+       <interceptor 
+            name="ml-security" 
+            resource="/_config/ml-security.xml"
+            before-request="false" 
+            after-request="true" 
+            before-response="false" 
+            after-response="false"
+        />
+    </interceptors>
+</config>
