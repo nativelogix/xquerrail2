@@ -86,6 +86,21 @@ declare variable $ERROR-DOMAIN-CONFIGURATION   := xs:QName("ERROR-DOMAIN-CONFIGU
 declare variable $DOMAIN-CACHE-KEY := "application-domain::" ;
 declare variable $DOMAIN-CACHE-TS := "application-domains:timestamp::";
 
+
+declare function config:refresh-app-cache() {
+   for $sf in xdmp:get-server-field-names()
+   return 
+   if(fn:starts-with($sf,$DOMAIN-CACHE-KEY))  then
+      let $app-path := config:application-directory(fn:substring-after($sf, $DOMAIN-CACHE-KEY))
+      let $domain-key := fn:concat($app-path,"/domains/application-domain.xml")
+      let $config := config:get-resource(fn:concat($app-path,"/domains/application-domain.xml"))
+      let $config := config:_load-domain($config)
+      return (
+        xdmp:set-server-field($sf,$config)
+      )
+   else ()
+};
+
 (:~Function Returns a resource based on 
  : how the application server is configured.
  : If the modules are in the filesystem.  It invokes the modules
@@ -101,7 +116,29 @@ declare function config:get-resource($uri as xs:string) {
          <database>{xdmp:modules-database()}</database>
       </options>
       )
+};
 
+(:~
+ : Retrieves the config value. 
+:)
+declare function config:get-dbresource($uri as xs:string) {
+   fn:doc($uri)
+};
+
+(:~
+ : Returns a configuration value of the given resource
+ :)
+declare function config:get-config-value($node as element()?) {
+   if($node/@dbresource) 
+   then config:get-dbresource(fn:data($node/@dbresource))
+   else if($node/@resource) 
+        then config:get-resource(fn:data($node))
+   else if($node/@value) 
+        then fn:data($node/@value)
+   else if(fn:not(fn:exists($node)))
+        then ()
+   else fn:error(xs:QName("INVALID_CONFIGURATION_VALUE"),
+        "A configuration value must be an attribute whose name is @resource,@dbresource,@value",$node)
 };
 (:~
  : Returns the default application defined in the config or application config
@@ -113,13 +150,18 @@ declare function config:get-resource($uri as xs:string) {
  }; 
 (:~
  : Returns the default controller for entire application usually default
-:)
+ :)
 declare function config:default-controller()
 {
   fn:string($CONFIG/config:default-controller/@value)
 };
+
 declare function config:default-template($application-name) {
-  ($CONFIG/config:default-template/@value/fn:string(),"main")[1]
+  (
+   config:get-application($application-name)/config:default-template/@value/fn:string(),
+   $CONFIG/config:default-template/@value/fn:string(),
+   "main"
+   )[1]
 };
 (:~
  : Returns the resource directory for framework defined in /_config/config.xml
@@ -216,21 +258,10 @@ declare function config:anonymous-user($application-name)
    "anonymous"
 )[1]};
 
-declare function config:refresh-app-cache() {
-   for $sf in xdmp:get-server-field-names()
-   return 
-   if(fn:starts-with($sf,$DOMAIN-CACHE-KEY))  then
-      let $app-path := config:application-directory(fn:substring-after($sf, $DOMAIN-CACHE-KEY))
-      let $domain-key := fn:concat($app-path,"/domains/application-domain.xml")
-      let $config := config:get-resource(fn:concat($app-path,"/domains/application-domain.xml"))
-      let $config := config:_load-domain($config)
-      return (
-        xdmp:set-server-field($sf,$config)
-      )
-   else ()
-};
+
 (:~
- :  Get the domain for a given asset
+ :  Get the domain for a given application
+ :  @param $application-name - Name of the application
  :)
 declare function config:get-domain($application-name)
 {
@@ -341,10 +372,10 @@ declare function config:get-interceptors(
   if($value) 
   then $CONFIG/config:interceptors
      /config:interceptor[
-      if($value eq "before-request") then ./@before-request eq "true" 
-      else if($value eq "after-request") then ./@after-request eq "true"
+      if($value eq "before-request")       then ./@before-request eq "true" 
+      else if($value eq "after-request")   then ./@after-request eq "true"
       else if($value eq "before-response") then ./@before-response eq "true"
-      else if($value eq "after-response") then  ./@after-response eq "true"
+      else if($value eq "after-response")  then ./@after-response eq "true"
       else if($value eq "all") then fn:true()
       else fn:false()
      ]

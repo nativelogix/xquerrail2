@@ -3,18 +3,15 @@
     xsi:schemaLocation="http://www.xquerrail-framework.com/domain file:../_framework/schemas/config.xsd"
     >
     <!--Configurations-->
+    <!--Routing Module and Configuration-->
     <routes-config  resource="/_config/routes.xml"/>
     <routes-module resource="/_framework/routing.xqy"/>
     
+    <!--Interceptor Configuration-->
     <interceptor-config resource="/_config/interceptor.xml"/>
     <interceptor-module resource="/_framework/interceptor.xqy"/>
     
-    <environment-config resource="/_config/env.xml"/>
-    
     <plugin-config resource="/_config/plugin.xml"/>
-    
-    <controller-scripts-directory value="/resources/scripts"/> 
-    <controller-stylesheet-directory value="/resources/stylesheets"/>
     
     <error-handler resource="/_framework/error.xqy"/>    
     
@@ -33,14 +30,16 @@
     <default-controller value="default"/> 
     <default-action value="index"/>    
     <default-format value="xml"/>
+    <default-template value="main"/>
     <default-template-directory resource="/application/templates/"/>
     <default-view-directory resources="/application/views/"/>    
     
-    <!--Register Your Application Here-->
+    <!--Register Your Application(s) Here-->
     <application name="demo" namespace="http://www.xquerrail-framework.com/demo" uri="/demo">
         <domain resource="/demo/domains/application-domain.xml" />
         <script-directory value="/demo/resources/js"/>
         <stylesheet-directory value="/demo/resources/css"/>
+        <default-template value="main"/>
     </application>
     <!--
     <application name="application" namespace="http://my-application-namespace" uri="/application">

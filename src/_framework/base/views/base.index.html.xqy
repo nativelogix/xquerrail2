@@ -5,8 +5,8 @@ import module namespace response = "http://www.xquerrail-framework.com/response"
 
 import module namespace domain = "http://www.xquerrail-framework.com/domain" at "/_framework/domain.xqy";
 
-import module namespace js = "http://www.xquerrail-framework.com/helper/javascript" at "/_framework/helpers/javascript.xqy";
-import module namespace form = "http://www.xquerrail-framework.com/helper/form-builder" at "/_framework/helpers/form-builder.xqy";
+import module namespace js = "http://www.xquerrail-framework.com/helper/javascript" at "/_framework/helpers/javascript-helper.xqy";
+import module namespace form = "http://www.xquerrail-framework.com/helper/form" at "/_framework/helpers/form-helper.xqy";
 
 
 declare option xdmp:output "indent-untyped=yes";
@@ -24,20 +24,27 @@ let $model-editable := fn:not($domain-model/domain:navigation/@newable eq "false
 let $modelName := fn:data($domain-model/@name)
 let $modelLabel := (fn:data($domain-model/@label),$modelName)[1]
 let $gridCols := 
-    for $item in $domain-model//(domain:element|domain:attribute)
-    return form:field-grid-column($item)
+    js:json(js:array(
+      for $item in $domain-model//(domain:element|domain:attribute)
+      return form:field-grid-column($item)))
 let $editButtons := 
-     js:o((
-         js:p("search",($model/domain:navigation/@searchable,"true")[1]),
-         js:p("new",($model/domain:navigation/@newable,"true")[1]),
-         js:p("edit",($model/domain:navigation/@editable,"true")[1]),
-         js:p("delete",($model/domain:navigation/@removable,"true")[1]),
-         js:p("show",($model/domain:navigation/@showable,"false")[1]),
-         js:p("import",($model/domain:navigation/@importable,"false")[1]),
-         js:p("export",($model/domain:navigation/@exportable,"false")[1])
-     ))
-let $uuidMap :=  fn:string(<stmt>{{ name:'uuid', label:'UUID', index:'uuid',hidden:true }}</stmt>)
-let $gridColsStr := fn:string-join(($uuidMap,$gridCols),",")
+     js:json(
+       js:o((
+         js:kv("search",($model/domain:navigation/@searchable,"true")[1]),
+         js:kv("new",($model/domain:navigation/@newable,"true")[1]),
+         js:kv("edit",($model/domain:navigation/@editable,"true")[1]),
+         js:kv("delete",($model/domain:navigation/@removable,"true")[1]),
+         js:kv("show",($model/domain:navigation/@showable,"false")[1]),
+         js:kv("import",($model/domain:navigation/@importable,"false")[1]),
+         js:kv("export",($model/domain:navigation/@exportable,"false")[1])
+     )))
+(:let $uuidMap :=  fn:string(<stmt>{{ name:'uuid', label:'UUID', index:'uuid',hidden:true }}</stmt>):)
+let $uuidMap := js:json(js:o((
+                     js:kv("name","uuid"),
+                     js:kv("label","UUID"),
+                     js:kv("index","uuid"),
+                     js:kv("hidden",fn:true())
+                )))
 let $uuidKey := domain:get-field-id($domain-model/domain:element[@name = "uuid"])
 
 (:Editable:)
@@ -76,7 +83,7 @@ return
                 datatype: "xml",
                 pager: '#{response:controller()}_table_pager',
                 id : "{domain:get-model-identity-field-name(response:model())}",
-                colModel: [{$gridColsStr}],
+                colModel: {$gridCols},
                 loadonce:false,
                 rowNum:100,
                 pgbuttons: true,

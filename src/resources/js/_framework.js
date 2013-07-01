@@ -1,29 +1,6 @@
 var indexGrid = null;
 var codeMirrors = [];
 
-function xmlListReaderSettings() {
-    return  {
-        root: 'list',
-        row: context.modelName,
-        id: context.modelIdSelector,
-        page: 'list>currentpage',
-        total: 'list>totalpages',
-        records: 'list>totalrecords',
-        repeatitems: false
-    };
-}
-
-function jsonListReaderSettings() {
-   return {
-        root: 'list',
-        id: context.modelId,
-        page: 'currentpage',
-        total: 'totalpages',
-        records: 'totalrecords',
-        repeatitems: false
-    };
-}
-
 
 function initToolbar(props) {
   var id = jQuery(indexGrid).jqGrid('getGridParam', 'selrow');
@@ -62,9 +39,12 @@ function newForm() {
    window.location.href = "/" + context.controller + "/new.html";
 }
 
-// Sends the partial form back to UI
-function editForm() {
-    window.location.href = "/" + context.controller + "/edit.html?" + context.modelId + "=" + context.currentId;
+function editForm() { 
+   if(context.currentId != null) {
+            window.location.href = "/" + context.controller + "/edit.html?" + context.modelId + "=" + context.currentId;
+   } else if(context.currentId == null ){
+     alert("Please select a record");
+   }
 }
 
 function deleteForm() {
@@ -74,7 +54,7 @@ function deleteForm() {
       if(c) {
         window.location.href = "/" + context.controller + "/remove.html?" + context.modelId + "=" + context.currentId;
       }
-   } else if(_id == null ){
+   } else if(context.currentId == null ){
      alert("Please select a record");
    }
 };
@@ -133,123 +113,139 @@ function exportForm() {
      title:'Export Options'     
   });
 }
-function resizeGrid() {
-    jQuery(indexGrid).setGridWidth(jQuery("#list-wrapper").innerWidth()) - 80;
-    jQuery(indexGrid).setGridHeight(jQuery("#list-wrapper").innerHeight() - 80);
-}
-function resizeLayout() {
-  outerLayout.resizeAll();
-  resizeGrid();
+//Creates a partial form inside of ajax 
+function editFormAjax(container) {
+
 }
 
-function initListGrid(gridId, gridParams) {
-    indexGrid = gridId;
-    jQuery(gridId).jqGrid(gridParams)
-    .navGrid(gridId + '_pager',{edit: false, add: false, del: false, search: false, reload: true});
-    /*.navButtonAdd(gridId + "_pager",{
-       title: "Find",
-       caption:"Find", 
-       buttonicon: "ui-icon-search",    
-       onClickButton:function() {
-          jQuery(gridId).jqGrid('searchGrid',{multipleSearch:true});
-    }
-    })
-    .navButtonAdd(gridId + "_pager",{
-       title: "Columns",
-       caption:"Columns", 
-       buttonicon: "ui-icon-calc",    
-       onClickButton:function() {
-          jQuery(gridId).columnChooser({          
+function newFormAjax(container) {
+
+}
+function deleteFormAjax(container) {
+
+}
+
+/*Grid Helper */
+var gridHelper = window.gridHelper || {}
+gridHelper = {
+    "_this" : this,
+    _context : {},
+    context  : function(context) {this._context = context},
+    init : function() { /*Globals*/
+         jQuery.extend(jQuery.jgrid.defaults, {
+             prmNames: { 
+                 oper: "_oper", 
+                 page: "page",
+                 sidx: "sb", 
+                 sord: "sort", 
+                 page: "pg", 
+                 rows: "rows", 
+                 search:"search",
+                 filters: "filter"
+             }
+         });
+    },
+    resizeGrid : function () {
+        jQuery(indexGrid).setGridWidth(jQuery("#list-wrapper").innerWidth()) - 80;
+        jQuery(indexGrid).setGridHeight(jQuery("#list-wrapper").innerHeight() - 80);
+    },
+    xmlListReaderSettings : function() {
+        return  {
+            root: 'list',
+            row: context.modelName,
+            id: context.modelIdSelector,
+            page: 'list>currentpage',
+            total: 'list>totalpages',
+            records: 'list>totalrecords',
+            repeatitems: false
+        };
+   },
+   jsonListReaderSettings : function() {
+       return {
+            root: 'list',
+            id: context.modelId,
+            page: 'currentpage',
+            total: 'totalpages',
+            records: 'totalrecords',
+            repeatitems: false
+        };
+    },
+    initListGrid : function(gridId, gridParams) {
+        indexGrid = gridId;
+        jQuery(gridId).jqGrid(gridParams)
+        .navGrid(gridId + '_pager',{edit: false, add: false, del: false, search: false, reload: true});
+        
+        jQuery ("table.ui-jqgrid-btable tr", jQuery(gridId)).css ("height", 28);
+        jQuery ("ui-pg-table .ui-pg-selbox").css("height",24);
+        jQuery(gridId).trigger("reloadGrid");   
+        $(window).on("resize","", function(e) {
+            gridHelper.resizeGrid();
+        });    
+    },
+    initListGridAndPager : function(gridId, pagerId, gridParams) {
+        indexGrid = gridId;
+        jQuery(gridId).jqGrid(gridParams)
+        .navGrid(pagerId,{edit: false, add: false, del: false, search: false, reload: false});
+        jQuery ("table.ui-jqgrid-btable tr", jQuery(gridId)).css ("height", 22);
+        jQuery(gridId).trigger("reloadGrid");   
+        $(window).on("resize","", function(e) {
+            gridHelper.resizeGrid();
+        });
+        gridHelper.resizeGrid();    
+    },
+    /*Grid Formatter for binary Output*/
+    binaryFormatter : function (cellValue, options, rowObject) {
+         return $(rowObject).find(options.colModel.name).attr("filename");
+    },   
+    /* Grid Formatter for array or repeater elements*/
+    arrayFormatter : function(cellValue, options, rowObject) {
+          var values = [];
+          $(rowObject).find(options.colModel.name).each(function(i,e) {
+             values.push($(e).text());
           });
-    }
-    });*/
-    jQuery ("table.ui-jqgrid-btable tr", jQuery(gridId)).css ("height", 28);
-    jQuery ("ui-pg-table .ui-pg-selbox").css("height",24);
-    jQuery(gridId).trigger("reloadGrid");   
-    $(window).on("resize","", function(e) {
-        resizeGrid();
-    });
-    resizeGrid();    
-}
-
-function initListGridAndPager(gridId, pagerId, gridParams) {
-    indexGrid = gridId;
-    jQuery(gridId).jqGrid(gridParams)
-    .navGrid(pagerId,{edit: false, add: false, del: false, search: false, reload: false});
-   /* .navButtonAdd(pagerId,{
-       title: "Search",
-       caption:"", 
-       buttonicon: "ui-icon-search",    
-       onClickButton:function() {
-          jQuery(gridId).jqGrid('searchGrid',{multipleSearch:true});
-    }
-    })
-    .navButtonAdd(pagerId,{
-       title: "Columns",
-       caption:"", 
-       buttonicon: "ui-icon-calc",    
-       onClickButton:function() {
-          jQuery(gridId).columnChooser({          
-          });
-    }
-    });*/
-    jQuery ("table.ui-jqgrid-btable tr", jQuery(gridId)).css ("height", 22);
-    
-    jQuery(gridId).trigger("reloadGrid");   
-    $(window).on("resize","", function(e) {
-        resizeGrid();
-    });
-    resizeGrid();    
-}
-
-function initLayout() {
-   if(jQuery("#popup") != null) {
-     jQuery(body).append("<div id='popup'></div>");
+          if(values.length == 0) {
+          return "&nbsp;";
+          } else { 
+            return "(" + values.join("; ") + ")";
+          }
    }
+   /*gridHelper*/
 }
 
-/*Globals*/
-jQuery.extend(jQuery.jgrid.defaults, {
-    prmNames: { 
-        oper: "_oper", 
-        page: "page",
-        sidx: "sb", 
-        sord: "sort", 
-        page: "pg", 
-        rows: "rows", 
-        search:"search",
-        filters: "filter"
-    }
-});
-
-function arrayFormatter(cellValue, options, rowObject) {
-    var values = [];
-    $(rowObject).find(options.colModel.name).each(function(i,e) {
-       values.push($(e).text());
-    });
-    if(values.length == 0) {
-    return "&nbsp;";
-    } else { 
-      return "(" + values.join("; ") + ")";
-    }
-}
-
-function binaryFormatter(cellValue, options, rowObject) {
-    //return $(rowObject).find(options.colModel.name)[0].attributes["filename"].textContent;
-    return $(rowObject).find(options.colModel.name).attr("filename");
-}
-$(function() {
-    /*Initialize Grids if present*/
-    if(window.gridModel != undefined) {
-        gridModel.xmlReader = xmlListReaderSettings();
-        gridModel.jsonReader = jsonListReaderSettings();
-        initListGrid("#" + context.controller + "_table",gridModel);
-    }
-    if(window.toolbarMode != undefined) { 
-        initToolbar(toolbarMode);
-    }
+/*
+  Initializes any controls that are loaded using specific plugins
+  To ensure all controls are rendered within the context then 
+  make sure to call this after loading a form from a partial call
+*/
+function initControls() {
     $("input.binary").fileupload();
     $("input.time").timepicker();
     $("div.dateTime").datetimepicker({autoclose:true});
     $("input.date").datepicker({autoclose :true});
+    $(".textarea").wysihtml5({
+    	"font-styles": true, //Font styling, e.g. h1, h2, etc. Default true
+    	"emphasis": true, //Italics, bold, etc. Default true
+    	"lists": true, //(Un)ordered lists, e.g. Bullets, Numbers. Default true
+    	"html": true, //Button which allows you to edit the generated HTML. Default false
+    	"link": true, //Button to insert a link. Default true
+    	"image": true, //Button to insert an image. Default true,
+    	"color": false, //Button to change color of font  
+        "parserRules" : wysihtml5ParserRules
+        
+    });
+};
+
+$(function() {
+    /*Initialize Grids if present*/
+    if(window.gridModel != undefined) {
+        gridModel.xmlReader = gridHelper.xmlListReaderSettings();
+        gridModel.jsonReader = gridHelper.jsonListReaderSettings();
+        gridHelper.initListGrid("#" + context.controller + "_table",gridModel);
+        gridHelper.resizeGrid();
+    }
+    if(window.toolbarMode != undefined) { 
+        initToolbar(toolbarMode);
+    }
+    //Initialize any dynamic form controls
+    initControls();
 });            

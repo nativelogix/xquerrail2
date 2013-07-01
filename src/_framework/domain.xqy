@@ -43,6 +43,14 @@ declare function domain:get-model-keyLabel-field($model as element(domain:model)
   $model//(domain:element|domain:attribute)[$model/@keyLabel = @name]
 };
 (:~
+ : Returns the field that matches the given field name or key
+ : @param $model - The model to extract the given field
+ : @param $name  - name or key of the field
+~:)
+declare function domain:get-model-field($model as element(domain:model),$key as xs:string) {
+  $model//(domain:element|domain:attribute)[$key = @name]
+};
+(:~
  : Returns model fields with unique constraints
  : @param $model - The model that returns all the unique constraint fields
 ~:)

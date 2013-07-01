@@ -4,7 +4,7 @@ xquery version "1.0-ml";
 ~:)
 declare default element namespace "http://www.w3.org/1999/xhtml";
 
-import module namespace form     = "http://www.xquerrail-framework.com/helper/form-builder" at "/_framework/helpers/form-builder.xqy";
+import module namespace form     = "http://www.xquerrail-framework.com/helper/form" at "/_framework/helpers/form-helper.xqy";
 import module namespace response = "http://www.xquerrail-framework.com/response" at "/_framework/response.xqy";
 import module namespace domain   = "http://www.xquerrail-framework.com/domain" at "/_framework/domain.xqy";
 

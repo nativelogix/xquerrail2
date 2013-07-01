@@ -506,16 +506,21 @@ declare function model:getByReferenceKeyLabel(
                         fn:concat("/*:",$name, "[fn:namespace-uri(.) = '", $nameSpace, "']") 
                 },
                 cts:or-query((
-                    
+                    if($domain-model/@persistence = "document") then
+                        if($key-field-def instance of element(domain:attribute)) 
+                        then cts:element-attribute-value-query(fn:QName("{$nameSpace}","{$model-name}"),fn:QName("","{$id-field}"),"{$value}","exact")
+                        else cts:element-value-query(fn:QName("{$nameSpace}","{$key-field}"),"{$value}")
+                    else                     
                     if($key-field-def instance of element(domain:attribute)) 
-                    then cts:element-attribute-range-query(fn:QName("{$nameSpace}","{$model-name}"),fn:QName("","{$id-field}"),"=","{$value}")
+                    then cts:element-attribute-range-query(fn:QName("{$nameSpace}","{$model-name}"),fn:QName("","{$id-field}"),"=","{$value}","exact")
                     else cts:element-range-query(fn:QName("{$nameSpace}","{$key-field}"),"=","{$value}")
                 )), ("filtered"))
         </stmt>))
+    let $exprValue := xdmp:value($stmt)
     return (
         (: Execute statement :)
-        xdmp:log(("model:getByReference::",xdmp:value($stmt)),"debug"),
-        xdmp:value($stmt)
+        xdmp:log(("model:getByReference::",$exprValue),"debug"),
+        $exprValue      
         )
 };
 declare function model:update-partial(
@@ -614,7 +619,10 @@ declare function model:update(
      else 
        fn:error(xs:QName("ERROR"), "Trying to update a document that does not exist.")
 };
-
+declare function model:create-or-update($domain-model as element(domain:model),$params as map:map) {
+   if(model:get($domain-model,$params)) then model:update($domain-model,$params)
+   else model:create($domain-model,$params)
+   };
 (:~
  :  Returns all namespaces from domain:model and inherited from domain
 ~:)
@@ -1748,6 +1756,7 @@ declare function model:find($domain-model as element(domain:model),$params as ma
         else if($persistence = 'directory') then 
                 cts:search(fn:collection(),cts:element-query($model-qname, $search))       
         else fn:error(xs:QName("INVALID-PERSISTENCE"),"Invalid Persistence", $persistence)
+   let $_ := xdmp:log($search)
    return $found        
 };
 (:~
@@ -1766,11 +1775,10 @@ declare function model:find($domain-model as element(domain:model),$params as ma
 declare function find-params($model as element(domain:model),$params as map:map) {
    let $queries := 
     for $k in map:keys($params)[fn:not(. = "_join")]
-        let $parts    := fn:analyze-string($k, "^(!)?(\i\c*)(==|!=|>=|>|<=|<|\.\.|)?$")
-        let $negated  := $parts/as:match/as:group[@nr eq 1]
-        let $opfield  := $parts/as:match/as:group[@nr eq 2]
-        let $operator := $parts/as:match/as:group[@nr eq 3]
-        let $field    := $model//*:element[@name eq $opfield]
+        let $parts    := fn:analyze-string($k, "^(\i\c*)(==|!=|>=|>|<=|<|\.\.|)?$")
+        let $opfield  := $parts/as:match/as:group[@nr eq 1]
+        let $operator := $parts/as:match/as:group[@nr eq 2]
+        let $field    := domain:get-model-field($model,$opfield)
         let $stype    := ($field/domain:navigation/domain:searchType,"value")[1]
         let $ns       := domain:get-field-namespace($field)
         let $qname    := fn:QName($ns,$field/@name)
@@ -1805,9 +1813,7 @@ declare function find-params($model as element(domain:model),$params as map:map)
                 then cts:element-word-query($qname,map:get($params,$k))
                 else cts:element-word-query($qname,map:get($params,$k))
       return 
-           if($negated) 
-           then cts:not-query($query)
-           else $query
+         $query
   let $join := (map:get($params,"_join"),"and")[1]  
   return 
     if($join eq "or") 

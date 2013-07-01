@@ -15,7 +15,9 @@ declare default element namespace "http://www.w3.org/1999/xhtml";
             <div class="container-fluid">
                 <div class="row-fluid">
                     <div class="span3">
-                        <?template name="sidebar"?>
+                        <?slot name="sidebar"?>
+                          <?template name="sidebar"?>
+                        <?endslot?>
                     </div>
                     <div class="span9">
                         <?view?>
@@ -24,14 +26,7 @@ declare default element namespace "http://www.w3.org/1999/xhtml";
                 <hr/>   
                 <?template name="footer"?>
             </div> <!-- /container -->
-            
-            <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-            <script>window.jQuery || document.write({'<script src="/resources/js/vendor/jquery-1.9.1.min.js"><\/script>'})</script>
-
-        <script src="/resources/js/vendor/bootstrap.min.js">//</script>
-        <script src="/resources/js/jqgrid/js/jquery.jqGrid.min.js">//</script>
-        <script src="/resources/js/_framework.js">//</script>
-        <script src="/resources/js/main.js">// </script>
+            <?template name="scripts"?>
     </body>
     </html>
 </template>/(comment()|node())

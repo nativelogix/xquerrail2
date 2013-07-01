@@ -21,10 +21,15 @@
    <route id="demo_login" pattern="^/login(.html)?">
       <default key="_controller">demo:default:login:html</default>
    </route>
+   
    <route id="demo_default_index" pattern="^/(\i\c*[^/])/?$">
       <default key="_controller">demo:$1:index:xml</default>      
    </route>
    
+   <route id="docs_item" pattern="/docs/_/(.*)$">
+      <default key="_controller">demo:docs:details:html</default>
+      <param key="link">$1</param>
+   </route>
    <route id="demo_default_controller_action_format" pattern="^/(\i\c*[^/])/(\i\c*)\.(html|xml|json)$">
       <default key="_controller">demo:$1:$2:$3</default>      
    </route>  

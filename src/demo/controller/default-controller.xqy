@@ -13,8 +13,8 @@ import module namespace response = "http://www.xquerrail-framework.com/response"
 
 declare function controller:initialize($request)
 {
-  request:initialize($request),
-  response:initialize(map:map(),$request)
+   request:initialize($request),
+   response:initialize(map:map(),$request)
 };
 
 declare function controller:main()
@@ -37,10 +37,10 @@ declare function controller:index()
 declare function controller:login()
 {
  let $username   := request:param("username")[1] 
- let $password := request:param("password")[1]
- let $returnUrl := request:param("returnUrl")
+ let $password   := request:param("password")[1]
+ let $returnUrl  := request:param("returnUrl")
  return 
-    if($username ne "" or $password ne "") then 
+    if($username ne "" or $password ne "") then     
        let $is-logged-in := xdmp:login($username,$password)
        return
        if($is-logged-in) then (
@@ -77,4 +77,9 @@ declare function controller:logout()
     response:redirect("/"),
     response:flush()
 )};
+declare function controller:three-columns() {
+   response:set-view("index"),
+   response:set-template("three-columns"),
+   response:flush()
+};
 

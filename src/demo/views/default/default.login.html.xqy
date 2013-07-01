@@ -1,18 +1,6 @@
-<div class="" id="loginModal">
-    <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-        <h3>Have an Account?</h3>
-    </div>
+<div class="offset3 span6" id="loginModal">
     <div class="modal-body">
         <div class="well">
-            <ul class="nav nav-tabs">
-                <li class="active">
-                    <a href="#login" data-toggle="tab">Login</a>
-                </li>
-                <li>
-                    <a href="#create" data-toggle="tab">Create Account</a>
-                </li>
-            </ul>
             <div id="myTabContent" class="tab-content">
                 <div class="tab-pane active in" id="login">
                     <form class="form-horizontal" action="/login.html" method="POST">
@@ -20,6 +8,11 @@
                             <div id="legend">
                                 <legend class="">Login</legend>
                             </div>
+                                <?if response:flash("login")?>
+                                    <div class="alert alert-error">
+                                        <a class="close" data-dismiss="alert" href="#">x</a>Incorrect Username or Password!
+                                    </div> 
+                               <?endif?>
                             <div class="control-group">
                                 <!-- Username -->
                                 <label class="control-label" for="username">Username</label>

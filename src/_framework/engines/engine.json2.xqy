@@ -24,7 +24,7 @@ import module namespace json = "http://marklogic.com/json"
    at "/_framework/lib/mljson.xqy";
 
 import module namespace js = "http://www.xquerrail-framework.com/helper/javascript-builder"
-   at "/_framework/helpers/javascript-builder.xqy";
+   at "/_framework/helpers/javascript.xqy";
 
 import module namespace jsb = "http://www.xquerrail-framework.com/helper/json"
     at "/_framework/helpers/json-builder.xqy";

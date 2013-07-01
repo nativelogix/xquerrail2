@@ -10,9 +10,10 @@ declare default element namespace "http://www.w3.org/1999/xhtml";
             <a class="brand" href="#">XQuerrail Demo</a>
             <div class="nav-collapse collapse">
                 <ul class="nav">
-                    <li class="active"><a href="#">Home</a></li>
-                    <li><a href="#about">Menu #1</a></li>
-                    <li><a href="#contact">Menu #2</a></li>
+                    <li class="active"><a href="#">Welcome</a></li>
+                    <li><a href="/docs/">Documentation</a></li>
+                    <li><a href="/api/">API</a></li>
+                    <li><a href="http://github.com/garyvidal/xquerrail2" target="_new">GitHub</a></li>
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">Controllers <b class="caret">&nbsp;</b></a>
                         <ul class="dropdown-menu">

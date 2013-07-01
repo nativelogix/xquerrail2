@@ -20,6 +20,9 @@ import module namespace model = "http://www.xquerrail-framework.com/model/base"
 
 import module namespace domain = "http://www.xquerrail-framework.com/domain"
    at "/_framework/domain.xqy";
+
+import module namespace config = "http://www.xquerrail-framework.com/config"
+   at "/_framework/config.xqy";
    
 declare default collation "http://marklogic.com/collation/codepoint";
   
@@ -95,7 +98,7 @@ declare function controller:main()
    then (
       response:set-controller(controller:name()),
       response:set-format(request:format()),
-      response:set-template("main"),
+      response:set-template(config:default-template(request:application())),
       response:set-view("info"),
       response:flush()
    ) else (
@@ -193,7 +196,7 @@ declare function controller:delete()
 declare function controller:search()
 {(
 
-   response:set-template("main"),
+   response:set-template(config:default-template(request:application())),
    response:set-view("search"),
    response:set-title(fn:concat("Search ", controller:controller()/@label)),
    response:set-body(model:search(controller:model(),request:params())),
@@ -229,7 +232,7 @@ declare function controller:index()
    if(response:model()/@persistence eq "singleton")   
    then response:set-view("edit")
    else response:set-view("index"),
-    response:set-template("main"),
+    response:set-template(config:default-template(request:application())),
     response:set-title(controller:controller()/@label),
     response:flush()
 )};
@@ -240,7 +243,7 @@ declare function controller:show()
 {
  (   
     response:set-body(controller:get()),
-    response:set-template("main"),
+    response:set-template(config:default-template(request:application())),
     response:set-view("show"),  
     response:flush()
  )     
@@ -251,14 +254,14 @@ declare function controller:details()
 {
  (   
     response:set-body(controller:get()),
-    response:set-template("main"),
+    response:set-template(config:default-template(request:application())),
     response:set-view("details"),  
     response:flush()
  )     
 };   
 declare function controller:new()
 {(  
-    response:set-template("main"),
+    response:set-template(config:default-template(request:application())),
     response:set-title(controller:model()/@label),
     response:set-view("new"),  
     response:flush()
@@ -291,7 +294,7 @@ declare function controller:save()
    ) else (
       response:set-flash("save","Record has been saved"),
       response:set-body($update),
-      response:set-template("main"),
+      response:set-template(config:default-template(request:application())),
       response:set-format("html"),
       response:redirect(request:controller(),"index"),
       response:flush()
@@ -302,7 +305,7 @@ declare function controller:edit()
 {(
     response:set-body(controller:get()),
     response:set-title((controller:model()/@label, controller:model()/@name)[1]),
-    response:set-template("main"),
+    response:set-template(config:default-template(request:application())),
     response:set-view("edit"), 
     response:flush()
 )};
@@ -360,13 +363,13 @@ declare function controller:fields()
 )};
 
 declare function controller:import() {
-    response:set-template("main"),
+    response:set-template(config:default-template(request:application())),
     response:set-view("import"),  
     response:flush()
 };
 
 declare function controller:export() {
-    response:set-template("main"),
+    response:set-template(config:default-template(request:application())),
     response:set-view("export"),  
     response:flush()
 };
