@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration xmlns="http://www.xquerrail-framework.com/configuration">
+    <security xmlns="http://www.xquerrail-framework.com/security">
+        <user>
+          <name>anonymous</name>
+          <roles>
+              <role-name>anonymous</role-name>
+          </roles>
+        </user>
+        <role>
+           <role-name>anonymous</role-name>
+           <roles>
+           </roles>
+           <privileges>
+               
+           </privileges>
+        </role>
+    </security>
+    <databases xmlns="http://www.xquerrail-framework.com/database">
+        <!--Configure any database forest defaults required by your application-->
+        <database-defaults>   
+            <database-name>%application%</database-name>
+            <forest-name>%application%-forest</forest-name>
+        </database-defaults>  
+        
+        <modules-database-defaults>
+            <database-name>%application%-modules</database-name>
+            <forest-name>%application%-modules-forest</forest-name>
+        </modules-database-defaults>
+        
+        <schemas-database-defaults>
+            <database-name>%application%-schemas</database-name>
+            <forest-name>%application%-schemas-forest</forest-name>
+        </schemas-database-defaults>    
+        
+        <appserver-defaults>
+            <!--Defines default properties that are inherited by all configurations-->
+        </appserver-defaults>
+    </databases>
+     
+     <environment name="local">
+         <appserver>
+             <root></root>
+             <port></port>
+         </appserver>
+     </environment>     
+</configuration>

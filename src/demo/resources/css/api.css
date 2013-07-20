@@ -1,0 +1,25 @@
+.function-source:after {
+    background-color: #F5F5F5;
+    border: 1px solid #DDDDDD;
+    border-radius: 4px 0 4px 0;
+    color: #9DA0A4;
+    content: "Source";
+    font-size: 12px;
+    font-weight: bold;
+    left: -1px;
+    padding: 3px 7px;
+    position: absolute;
+    top: -1px;
+}
+.function-source {
+    background-color: #FFFFFF;
+    border: 1px solid #DDDDDD;
+    border-radius: 4px 4px 4px 4px;
+    margin: 0px 0;
+    padding: 39px 19px 14px;
+    position: relative;
+}
+.function-name {
+  font-weight:bolder;
+  color:#0088CC;  
+}
