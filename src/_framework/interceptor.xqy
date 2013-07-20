@@ -51,7 +51,7 @@ declare function interceptor:get-matching-scopes($configuration) {
          return 
              if($scope-token eq "*") 
              then fn:true()
-             else $scope[$pos] eq $context-tokens[$pos]             
+             else $scope-tokens[$pos] eq $context-tokens[$pos]             
       where every $m in $matches satisfies $m eq fn:true()
       return
           $scope

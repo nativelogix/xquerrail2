@@ -30,13 +30,13 @@ let $gridCols :=
 let $editButtons := 
      js:json(
        js:o((
-         js:kv("search",($model/domain:navigation/@searchable,"true")[1]),
-         js:kv("new",($model/domain:navigation/@newable,"true")[1]),
-         js:kv("edit",($model/domain:navigation/@editable,"true")[1]),
-         js:kv("delete",($model/domain:navigation/@removable,"true")[1]),
-         js:kv("show",($model/domain:navigation/@showable,"false")[1]),
-         js:kv("import",($model/domain:navigation/@importable,"false")[1]),
-         js:kv("export",($model/domain:navigation/@exportable,"false")[1])
+         js:kv("search",xs:boolean(($model/domain:navigation/@searchable,"true")[1])),
+         js:kv("new",   xs:boolean(($model/domain:navigation/@newable,"true")[1])),
+         js:kv("edit",  xs:boolean(($model/domain:navigation/@editable,"true")[1])),
+         js:kv("delete",xs:boolean(($model/domain:navigation/@removable,"true")[1])),
+         js:kv("show",  xs:boolean(($model/domain:navigation/@showable,"false")[1])),
+         js:kv("import",xs:boolean(($model/domain:navigation/@importable,"false")[1])),
+         js:kv("export",xs:boolean(($model/domain:navigation/@exportable,"false")[1]))
      )))
 (:let $uuidMap :=  fn:string(<stmt>{{ name:'uuid', label:'UUID', index:'uuid',hidden:true }}</stmt>):)
 let $uuidMap := js:json(js:o((

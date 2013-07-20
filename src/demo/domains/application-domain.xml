@@ -3,7 +3,8 @@
     xsi:schemaLocation="http://www.xquerrail-framework.com/domain file:/C:/Users/gvidal/workspace64/marklogic_valrico/_framework/schemas/domain.xsd">
     <name>demo</name>
     <content-namespace prefix="demo" namespace-uri="http://www.xquerrail-framework.com/demo"/>
-    
+    <application-namespace prefix="xquerrail" namespace-uri="http://www.xquerrail-framework.com/demo"/>
+    <default-collation>http://marklogic.com/collation/codepoint</default-collation>
     <!--Implement a base class to inherit metadata-->
     <model name="base" description="Base Extension Class" persistence="abstract">
         <element name="uuid" type="identity" identity="true" label="Globally Unique Identifier">
@@ -165,6 +166,16 @@
             <ui type="html-editor" class="prettyprint"/>
         </element>
     </model> 
+    <model name="apidoc" key="uuid" keyLabel="title" persistence="directory" label="Document" extends="base">
+        <directory>/docs/</directory>
+        <element name="link" type="string" label="Link"></element>
+        <element name="header" type="string" label="Header Before"></element>
+        <element name="order" type="integer" label="List Order"></element>
+        <element name="title" type="string" label="Title"></element>
+        <element name="xqdoc" type="schema-element" label="Documentation">
+            <ui type="textarea" class="prettyprint"/>
+        </element>
+    </model>
     <model name="allFormItems" key="id" keyLabel="id"  persistence="document">
         <document root="allFormList">/samples/allFormList.xml</document>
         <element name="id" type="string" identity="true" label="Identity Field">
@@ -217,4 +228,5 @@
     <controller name="roles" model="role" label="Roles" class="security"/>
     <controller name="allFormItems" model="allFormItems" label="All Form Items" class="misc"/>
     <controller name="docs" model="document" label="Documentation" class="docs"/>
+    <controller name="api" model="apidoc" label="API" class="api"/>
 </domain>

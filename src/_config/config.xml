@@ -37,8 +37,8 @@
     <!--Register Your Application(s) Here-->
     <application name="demo" namespace="http://www.xquerrail-framework.com/demo" uri="/demo">
         <domain resource="/demo/domains/application-domain.xml" />
-        <script-directory value="/demo/resources/js"/>
-        <stylesheet-directory value="/demo/resources/css"/>
+        <script-directory value="/demo/resources/js/"/>
+        <stylesheet-directory value="/demo/resources/css/"/>
         <default-template value="main"/>
     </application>
     <!--

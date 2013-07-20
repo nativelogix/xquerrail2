@@ -222,7 +222,7 @@ function initControls() {
     $("input.time").timepicker();
     $("div.dateTime").datetimepicker({autoclose:true});
     $("input.date").datepicker({autoclose :true});
-    $(".textarea").wysihtml5({
+    $(".html-editor").wysihtml5({
     	"font-styles": true, //Font styling, e.g. h1, h2, etc. Default true
     	"emphasis": true, //Italics, bold, etc. Default true
     	"lists": true, //(Un)ordered lists, e.g. Bullets, Numbers. Default true

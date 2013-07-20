@@ -9,7 +9,9 @@
         <allow-role>anonymous</allow-role>
     </scope>
     <scope context="demo:default:*">
-        <deny-role>anonymous</deny-role>
+        <allow-role>*</allow-role>
+    </scope>
+    <scope context="demo:docs:*">
         <allow-role>*</allow-role>
     </scope>
     <scope context="*">

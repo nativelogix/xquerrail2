@@ -1,4 +1,8 @@
-    xquery version "1.0-ml";
+(:~
+ : Provides access to config and supports retrieving resources from configuration entries
+ : @version 1.1
+ :)
+xquery version "1.0-ml";
 
 module namespace config = "http://www.xquerrail-framework.com/config";
 
@@ -86,7 +90,10 @@ declare variable $ERROR-DOMAIN-CONFIGURATION   := xs:QName("ERROR-DOMAIN-CONFIGU
 declare variable $DOMAIN-CACHE-KEY := "application-domain::" ;
 declare variable $DOMAIN-CACHE-TS := "application-domains:timestamp::";
 
-
+(:~
+  Initializes the application domains and caches them in the applicatino server. 
+  When using a cluster please ensure you change configuration to cache from database
+ :)
 declare function config:refresh-app-cache() {
    for $sf in xdmp:get-server-field-names()
    return 
@@ -100,6 +107,13 @@ declare function config:refresh-app-cache() {
       )
    else ()
 };
+(:~
+ : Returns a list of applications from the config.xml
+~:)
+declare function config:get-applications() {
+   $CONFIG/domain:application
+};
+
 
 (:~Function Returns a resource based on 
  : how the application server is configured.
@@ -199,7 +213,7 @@ declare function config:get-dispatcher()
 
 (:~
  : returns the application configuration for a given application by name
- : @param $application-name - Application name
+ : @param application-name Application name
  :)
 declare function config:get-application($application-name as xs:string)
 {
@@ -384,7 +398,7 @@ declare function config:get-interceptors(
 (:~
  : Returns the default interceptor configuration.  If none is configured will map to the default
 ~:)
-declare function config:interceptor-config()
+declare function config:interceptor-config() as xs:string?
 {
    (
      $CONFIG/config:interceptor-config/@value/fn:data(.),

@@ -430,6 +430,13 @@ declare function engine:transform-echo($node as processing-instruction("echo")){
    return
      xdmp:value($value)
 };  
+declare function engine:transform-xsl($node) {
+   let $_node  := xdmp:unquote(fn:concat("<xsl ",fn:data($node),"/>"))/node()
+   let $source := xdmp:value($_node/@source)
+   let $xsl    := $_node/@xsl
+   return
+       xdmp:xslt-invoke($xsl,$source)
+};
 (:
   Core processing-instructions and any other data should be handled here
 :)
@@ -446,6 +453,7 @@ declare function engine:transform($node as item())
          case processing-instruction("has-slot") return engine:transform-has_slot($node)
          case processing-instruction("slot") return engine:transform-slot($node)
          case processing-instruction("echo") return engine:transform-echo($node)
+         case processing-instruction("xsl") return engine:transform-xsl($node)
          case processing-instruction() return engine:transform-dynamic($node)
          case element() return
            element {fn:node-name($node)}

@@ -14,12 +14,12 @@ declare default element namespace "http://www.w3.org/1999/xhtml";
             <?template name="nav"?>
             <div class="container-fluid">
                 <div class="row-fluid">
-                    <div class="span3">
+                    <div class="span2">
                         <?slot name="sidebar"?>
                           <?template name="sidebar"?>
                         <?endslot?>
                     </div>
-                    <div class="span9">
+                    <div class="span10">
                         <?view?>
                     </div>
                 </div>

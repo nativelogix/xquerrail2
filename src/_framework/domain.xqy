@@ -1,4 +1,9 @@
 xquery version "1.0-ml";
+(:~
+ : Controls all interaction with an application domain.  The domain provides annotations and 
+ : definitions for dynamic features built into XQuerrail.
+ : @version 2.0
+ :)
 module namespace domain = "http://www.xquerrail-framework.com/domain";
 
 import module namespace config = "http://www.xquerrail-framework.com/config"
@@ -15,14 +20,14 @@ declare variable $DOMAIN-NODE-FIELDS :=
 (:~
  : Returns the field that is the identity key for a given model.
  : @param $model - The model to extract the given identity field
-~:)
+ :)
 declare function domain:get-model-identity-field-name($model as element(domain:model))  {
   $model//(domain:element|domain:attribute)[@identity eq "true" or @type eq "identity"]/fn:string(@name)
 };
 (:~
  : Returns the field that is the identity key for a given model.
  : @param $model - The model to extract the given identity field
-~:)
+ :)
 declare function domain:get-model-identity-field($model as element(domain:model)) {
   $model//(domain:element|domain:attribute)[@identity eq "true" or @type eq "identity"]
 };
@@ -30,7 +35,7 @@ declare function domain:get-model-identity-field($model as element(domain:model)
 (:~
  : Returns the field that is the identity key for a given model.
  : @param $model - The model to extract the given identity field
-~:)
+ :)
 declare function domain:get-model-key-field($model as element(domain:model)) {
   $model//(domain:element|domain:attribute)[$model/@key = @name]
 };
@@ -38,7 +43,7 @@ declare function domain:get-model-key-field($model as element(domain:model)) {
 (:~
  : Returns the field that is the identity key for a given model.
  : @param $model - The model to extract the given identity field
-~:)
+ :)
 declare function domain:get-model-keyLabel-field($model as element(domain:model)) {
   $model//(domain:element|domain:attribute)[$model/@keyLabel = @name]
 };
@@ -46,22 +51,56 @@ declare function domain:get-model-keyLabel-field($model as element(domain:model)
  : Returns the field that matches the given field name or key
  : @param $model - The model to extract the given field
  : @param $name  - name or key of the field
-~:)
+ :)
 declare function domain:get-model-field($model as element(domain:model),$key as xs:string) {
   $model//(domain:element|domain:attribute)[$key = @name]
 };
 (:~
  : Returns model fields with unique constraints
  : @param $model - The model that returns all the unique constraint fields
-~:)
+ :)
 declare function domain:get-model-unique-constraint-fields($model as element(domain:model)) {
    $model//(domain:element|domain:attribute)[domain:constraint/@unique = "true"]
 };
 
 (:~
  : Resolves a domain type to xsi:type
-~:)
+ :)
 declare function domain:resolve-datatype($field)
+{
+   let $data-type := element{$field/@type}{$field}
+   return 
+     typeswitch($data-type)
+     case element(uuid) return "xs:string"
+     case element(identity) return "xs:ID"
+     case element(create-timestamp) return "xs:dateTime"
+     case element(create-user) return "xs:string"
+     case element(update-timestamp) return "xs:dateTime"
+     case element(update-user) return "xs:string"
+     case element(modify-user) return "xs:string"
+     case element(binary) return "binary()"
+     case element(schema-element) return "schema-element()"
+     case element(query) return "cts:query"
+     case element(point) return "cts:point"
+     case element(string) return "xs:string"
+     case element(integer) return "xs:integer"
+     case element(int) return "xs:int"
+     case element(long) return "xs:long"
+     case element(double) return "xs:double"
+     case element(decimal) return "xs:decimal"
+     case element(float) return "xs:float"
+     case element(boolean) return "xs:boolean"
+     case element(anyURI) return "xs:anyURI"
+     case element(dateTime) return "xs:dateTime"
+     case element(date) return "xs:date"
+     case element(duration) return "xs:duration"
+     case element(dayTime) return "xs:dayTimeDuration"
+     case element(yearMonth) return "xs:yearMonthDuration"
+     case element(monthDay) return "xs:monthDayDuration"
+     case element(reference) return "xs:string"
+     default return fn:error(xs:QName("UNRESOLVED-DATATYPE"),$field)
+};
+declare function domain:resolve-ctstype($field)
 {
    let $data-type := element{$field/@type}{$field}
    return 
@@ -109,7 +148,7 @@ declare function domain:get-content-namespace-uri(
  : Returns the content-namespace value for a given application
  : @param $application-name - name of the application
  : @return - The namespace URI of the given application
-~:)
+ :)
 declare function domain:get-content-namespace-uri( 
    $application-name as xs:string
 ) as xs:string 
@@ -121,7 +160,7 @@ declare function domain:get-content-namespace-uri(
  : Gets the controller definition for a given application by its name
  : @param $application-name - Name of the application
  : @param $controller-name - Name of the controller
-~:)
+ :)
 declare function domain:get-controller(
    $application-name as xs:string,
    $controller-name as xs:string
@@ -136,7 +175,7 @@ declare function domain:get-controller(
  :  Returns the name of the model associated with a controller.
  :  @param $application-name - Name of the application
  :  @param $controller-name - Name of the controller
-~:)
+ :)
 declare function domain:get-controller-model(
     $application-name as xs:string, 
     $controller-name as xs:string
@@ -153,7 +192,7 @@ declare function domain:get-controller-model(
  : Gets the name of the controller associated with a model
  : @param - $model-name as xs:string
  : @return  - The name of the controler 
-~:)
+ :)
 declare function domain:get-model-controller-name(
     $model-name as xs:string
  ) as xs:string* {
@@ -161,7 +200,7 @@ declare function domain:get-model-controller-name(
 };
 (:~
  : Gets the name of the controller for a given application and model.
-~:)
+ :)
 declare function domain:get-model-controller-name(
     $application as xs:string, 
     $model-name as xs:string
@@ -175,7 +214,7 @@ declare function domain:get-model-controller-name(
  : Returns a domain model from the default domain
  : @deprecated
  : @param - returns a domain model given a
-~:)
+ :)
 declare function domain:get-domain-model($model-name as xs:string) {
     domain:get-domain-model(config:default-application(), $model-name)
 };
@@ -214,7 +253,7 @@ as element(domain:model)*
 (:~
  : Returns a list of all defined controllers for a given application domain
  : @param $application-name - application domain name
-~:)
+ :)
 declare function domain:get-controllers(
    $application-name as xs:string
 ){
@@ -223,14 +262,14 @@ declare function domain:get-controllers(
 
 (:~
  : Returns the default application domain defined in the config.xml
-~:)
+ :)
 declare function domain:get-default-application(){
     config:default-application()
 };
 
 (:~
  : Returns the default content namespace for a given application
-~:)
+ :)
 declare function domain:get-default-namespace(
 $application-name as xs:string
 ) {
@@ -242,7 +281,7 @@ $application-name as xs:string
 (:~
  : Returns a listing of all inscope namespaces and their
  : prefixes
-~:)
+ :)
 declare function domain:get-in-scope-namespaces(
 $application-name as xs:string
 ) as element(namespace)
@@ -252,7 +291,7 @@ $application-name as xs:string
 (:~
  : Returns all content and declare-namespace in application-domain
  : @param $application-name - Name of the application 
-~:)
+ :)
 declare function domain:get-namespaces($application-name as xs:string) {
     let $application := config:get-domain($application-name)
     return 
@@ -261,7 +300,7 @@ declare function domain:get-namespaces($application-name as xs:string) {
 (:~
  : Returns a list of models with a given class attribute from a given application.  
  : Function is helpful for selecting a list of all models
-~:)
+ :)
 declare function domain:model-selector( 
    $application-name as xs:string,
    $class as xs:string
@@ -274,7 +313,7 @@ declare function domain:model-selector(
 (:~
  : Returns a list of domain models given a class selector
  : @param $class - name of a class associated witha given model. 
-~:)
+ :)
 declare function domain:model-selector( 
    $class as xs:string
 ) as element(domain:model)*
@@ -284,7 +323,7 @@ declare function domain:model-selector(
 
 (:~
  : Creates a unique hashed for a field
-~:)
+ :)
 declare function domain:get-node-key($node as node()) {
     let $items := $node/(ancestor-or-self::attribute() | ancestor-or-self::*)
     return
@@ -302,7 +341,7 @@ declare function domain:get-node-key($node as node()) {
 
 (:~
  :  Returns the id key of a given model or field.
-~:)
+ :)
 declare function domain:get-field-id($context as node()) {
     let $items := $context/ancestor-or-self::*[fn:node-name($context) = $DOMAIN-FIELDS]
     let $ns := domain:get-field-namespace($context)
@@ -319,7 +358,7 @@ declare function domain:get-field-id($context as node()) {
 
 (:~
  : Gets the namespace-uri of the field
-~:)
+ :)
 declare function domain:get-field-namespace(
 $field as node()
 ) as xs:string?
@@ -335,7 +374,7 @@ $field as node()
  : Gets the value of the field from a given field definition.  
  : @field - field instance of type(element|attribute|container)
  : @current-node - is the element from which to extract the value from.
-~:)
+ :)
 declare function domain:get-field-value(
     $field as element(),
     $current-node as node()?
@@ -348,7 +387,7 @@ declare function domain:get-field-value(
  : @param $field - the model definition
  : @param $key   - The key associated with a given element as assigned by domain:get-field-name
  : @param $current-node - is the instance of the current element to extract the value from
-~:)
+ :)
 declare function domain:get-field-value(
    $field as element(), 
    $key as xs:string, 
@@ -368,7 +407,7 @@ declare function domain:get-field-value(
 };
 (:~
  : Returns the reference value from a given field from the current context node.
-~:)
+ :)
 declare function domain:get-field-reference(
     $field as element(),
     $current-node as node()
@@ -379,7 +418,7 @@ declare function domain:get-field-reference(
 (:~
  : Returns the xpath expression for a given field by its id/name key
  : The xpath expression is relative to the root of the parent element
-~:)
+ :)
 declare function domain:get-field-xpath($model, $key) { 
  domain:get-field-xpath($model, $key, 2)  
 };
@@ -389,7 +428,7 @@ declare function domain:get-field-xpath($model, $key) {
  : @param model - 
  : @param $key  - is the id/name key assigned to the field.
  : @param $level - Number of parent levels to traverse for xpath expression. 
-~:)
+ :)
 declare function domain:get-field-xpath($model, $key, $level) { 
      let $elementField := $model/descendant-or-self::*[fn:node-name(.) = $DOMAIN-NODE-FIELDS][$key = domain:get-field-id(.)]    
      (:let $level := if($elementField instance of element(domain:attribute)) then 1 else $level:)
@@ -416,7 +455,7 @@ declare function domain:get-field-xpath($model, $key, $level) {
  : Constructs a map of a domain instance based on a list of retain node names
  : @param $doc - context node instance
  : @param $retain  - a list of nodes to retain from original context
-~:)
+ :)
 declare function domain:build-value-map($doc as node()?,$retain as xs:string*) 
 as map:map?
 {
@@ -431,7 +470,7 @@ as map:map?
  : @param $doc - context node instance
  : @param $map  - an existing map to populate with.
  : @param $retain  - a list of nodes to retain from original context
-~:)
+ :)
 declare function domain:recurse($node as node()?,$map as map:map, $retain as xs:string*) {
   let $key := domain:get-node-key($node)
   let $_ :=
@@ -494,7 +533,7 @@ as xs:string?
  : Returns a controller based on the model name
  : @param $application - name of the application
  : @param $model-name  - name of the model
-~:)
+ :)
 declare function domain:get-model-controller($application, $model-name) {
     let $domain := config:get-domain(config:get-application($application))
     return 
@@ -511,7 +550,7 @@ $model-name as xs:string*
 (:~
  : Returns a model based by its name(s)
  : @param $model-name - list of model names to return 
-~:)
+ :)
 declare function domain:get-model(
   $model-name as xs:string*
 ) as element(domain:model)* {
@@ -520,21 +559,21 @@ declare function domain:get-model(
 
 (:~
  : Returns an optionlist from the default domain
-~:)
+ :)
 declare function domain:get-optionlist($name) {
     domain:get-optionlist(domain:get-default-application(),$name)
 };
 
 (:~
  :  Returns an optionlist from the domain given domain
-~:)
+ :)
 declare function domain:get-optionlist($application-name,$listname) {
     config:get-domain($application-name)/domain:optionlist[@name eq $listname]
 };
 
 (:~
  : Returns an optionlist associated with a field in the given domain
-~:)
+ :)
 declare function domain:get-field-optionlist($field) {
    (
       $field/ancestor::domain:model/domain:optionlist[$field/domain:constraint/@inList = @name],

@@ -22,4 +22,5 @@ declare default element namespace "http://www.w3.org/1999/xhtml";
     <link rel="stylesheet" href="/resources/js/vendor/bootstrap-wysihtml5/bootstrap-wysihtml5.css"/>
     <link rel="stylesheet" href="/resources/js/vendor/bootstrap-wysihtml5/wysiwyg-color.css"/>
     <link rel="stylesheet" href="/resources/css/main.css"/>
+    <?controller-stylesheet?>
 </head>

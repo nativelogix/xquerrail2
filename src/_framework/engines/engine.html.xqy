@@ -27,7 +27,8 @@ declare variable $context := map:map();
  : Custom Tags the HTML Engine renders and handles during transform
 ~:)
 declare variable $engine-tags := 
-(
+(  
+
      xs:QName("engine:title"),
      xs:QName("engine:include-metas"),
      xs:QName("engine:include-http-metas"),
@@ -106,6 +107,7 @@ declare function engine:module-file-exists($path as xs:string) as xs:boolean
          </options>   
       )
 };
+
 (:~
  : Generates a script element for the given controller.  If a controller 
  : script is defined in the template the system will check to see if the
@@ -133,7 +135,7 @@ declare function engine:transform-controller-script($node)
 declare function engine:transform-controller-stylesheet($node)
 {
   let $stylesheet-directory := config:application-stylesheet-directory(response:application())
-  let $stylesheet-uri := fn:concat($stylesheet-directory,"/",response:controller(),".css")
+  let $stylesheet-uri := fn:concat($stylesheet-directory,if(fn:ends-with($stylesheet-directory,"/")) then () else "/",response:controller(),".css")
    return 
   if(response:controller() ne "" and engine:module-file-exists($stylesheet-uri))  
   then element link {
@@ -175,6 +177,7 @@ declare function engine:transform-flash-message($node)
 {
    response:flash(fn:data($node))
 };
+
 (:~
  : Custom Transformer handles HTML specific templates and
  : Tags.

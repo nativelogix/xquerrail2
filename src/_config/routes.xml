@@ -30,6 +30,10 @@
       <default key="_controller">demo:docs:details:html</default>
       <param key="link">$1</param>
    </route>
+   <route id="api_item" pattern="/api/_/(.*)$">
+      <default key="_controller">demo:api:details:html</default>
+      <param key="link">$1</param>
+   </route>
    <route id="demo_default_controller_action_format" pattern="^/(\i\c*[^/])/(\i\c*)\.(html|xml|json)$">
       <default key="_controller">demo:$1:$2:$3</default>      
    </route>  

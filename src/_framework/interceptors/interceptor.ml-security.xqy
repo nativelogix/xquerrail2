@@ -54,6 +54,7 @@ declare function ml-security:after-request(
                  $configuration/config:bypass-credentials/config:password
              )          
          else fn:false()
+     let $_ := xdmp:log(("context:", $context," scope::", $scope))
      return 
        if($bypassed) then ()  
        else 
@@ -67,7 +68,7 @@ declare function ml-security:after-request(
                 fn:concat($user, ":")
              )
           return xdmp:login($user, $password)      
-       else if($scope//config:allow-role = $roles or fn:not($scope//config:deny-role  = $roles)) then 
+       else if($scope//config:allow-role = $roles or $scope/config:allow-role = "*" or fn:not($scope//config:deny-role  = $roles)) then 
        ( 
           (:if(request:param("returnUrl") != "" and request:param("returnUrl")) 
           then request:set-redirect(request:param("returnUrl"))
