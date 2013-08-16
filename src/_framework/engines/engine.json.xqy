@@ -27,7 +27,7 @@ import module namespace js = "http://www.xquerrail-framework.com/helper/javascri
    at "/_framework/helpers/javascript.xqy";
 
 import module namespace jsb = "http://www.xquerrail-framework.com/helper/json"
-    at "/_framework/helpers/json-builder.xqy";
+    at "/_framework/helpers/json-helper.xqy";
 
 declare namespace tag = "http://www.xquerrail-framework.com/tag";  
 

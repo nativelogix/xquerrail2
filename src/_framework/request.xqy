@@ -42,7 +42,7 @@ declare variable $FILTERS           := "filters";
 declare variable $DEBUG             := "request:debug";
 declare variable $COLLECTION        := "request:collection";
 declare variable $HEADER-PREFIX     := "request:header::";
-declare variable $PARAM-PREFIX      := "request:field::";
+declare variable $PARAM-PREFIX      := "request:param::";
 declare variable $PARAM-CONTENT-TYPE-PREFIX := "request:field-content-type::";
 declare variable $PARAM-FILENAME-PREFIX   := "request:field-filename::";
 declare variable $SYS-PARAMS := ("_application","_controller","_action","_view","_context","_format","_url","_route","_partial","_debug");
@@ -101,7 +101,7 @@ declare function request:joinx($params as map:map)
  :  map:get($response, "field:xxx")
  :  Accessors:
  :      request:header::xxxx
- :      request:field::xxxx
+ :      request:param::xxxx
  :      request:body
 ~:)
 declare function request:initialize($_request as map:map) {
