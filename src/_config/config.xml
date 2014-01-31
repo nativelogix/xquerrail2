@@ -58,5 +58,18 @@
             before-response="false" 
             after-response="false"
         />
+        <interceptor 
+            name="compressor" 
+            resource="/_config/compressor.xml"
+            before-request="false" 
+            after-request="false" 
+            before-response="false" 
+            after-response="true"
+        />
     </interceptors>
+    <properties>
+        <property name="resource-path" resource="js"/>
+        <property name="css-path" resource="css"/>
+        <property name="js-path"  resource="js"/>
+    </properties>
 </config>

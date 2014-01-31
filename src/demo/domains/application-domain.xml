@@ -5,8 +5,6 @@
     <content-namespace prefix="demo" namespace-uri="http://xquerrail.com/demo"/>
     <application-namespace prefix="xquerrail" namespace-uri="http://xquerrail.com/demo"/>
     <default-collation>http://marklogic.com/collation/codepoint</default-collation>
-    <import id="lookup" resource="lookup-domain.xml"/>
-    <import id="content" resource="content-domain.xml"/>
     <!--Implement a base class to inherit metadata-->
     <model name="base" description="Base Extension Class" persistence="abstract">
         <element name="uuid" type="identity" identity="true" label="Globally Unique Identifier">
@@ -240,7 +238,7 @@
     </optionlist>
     
     <!-- Geographic Related Controllers -->
-    <!--
+    
     <controller name="countryCodes" model="countryCode" label="Country Codes" class="lookup"/>
     <controller name="timezones" model="timezone" label="Time Zones" class="lookup"/>
     <controller name="locales" model="locale" label="Locales" class="lookup"/>
@@ -251,5 +249,5 @@
     <controller name="roles" model="role" label="Roles" class="security"/>
     <controller name="docs" model="document" label="Documentation" class="docs"/>
     <controller name="api" model="apidoc" label="API" class="api"/>
-    -->
+    
 </domain>

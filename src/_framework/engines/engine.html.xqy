@@ -150,7 +150,7 @@ declare function engine:transform-javascript-include($node)
     fn:concat(
         $script-directory,
         if(fn:ends-with($script-directory,"/")) then () else "/",
-        "js/",
+        config:property("js-path"), "/",
         $resource,
         if(fn:ends-with($script-directory,"/")) then () else "/",
         ".js")
@@ -177,7 +177,7 @@ declare function engine:transform-stylesheet-include($node)
   fn:concat(
         $stylesheet-directory,
         if(fn:ends-with($stylesheet-directory,"/")) then () else "/",
-        "stylesheets/",
+        config:property("css-path"),
         $resource,".css")
    return 
   if(engine:module-file-exists($stylesheet-uri))  
@@ -215,21 +215,29 @@ declare function engine:transform-image-tag($node)
 declare function engine:transform-resource-include($node)
 {
   let $resource := fn:data($node) ! fn:replace(.,"&quot;","") ! fn:normalize-space(.)
-  let $stylesheet-directory :=  config:resource-directory() 
-  let $stylesheet-uri := 
+  let $resource-directory :=  config:resource-directory() 
+  let $extension := fn:tokenize($resource,"\.")[fn:last()]
+  let $resource-uri := 
   fn:concat(
-        $stylesheet-directory,
-        if(fn:ends-with($stylesheet-directory,"/")) then () else "/",
+        $resource-directory,
+        if(fn:ends-with($resource-directory,"/")) then () else "/",
         $resource)
    return 
-  if(engine:module-file-exists($stylesheet-uri))  
-  then element link {
-          attribute type{"text/css"},
-          attribute href {$stylesheet-uri},
-          attribute rel {"stylesheet"},
-          text{""}
-          }
-  else fn:error(xs:QName("INCLUDE-ERROR"),"Invalid path:" || $stylesheet-uri)
+       switch($extension)
+         case "css" return
+            element link {
+                  attribute type{"text/css"},
+                  attribute href {$resource-uri},
+                  attribute rel {"stylesheet"},
+                  text{""}
+                  }
+         case "js" return
+            element script {
+              attribute type {"text/javascript"},
+              attribute src {$resource-uri}
+               
+            }
+         default return fn:error(xs:QName("UNKNOWN-RESOURCE"),"Unknown Resource Error")  
 };
 (:~
  :  Returns a list of controllers as a unordered list.

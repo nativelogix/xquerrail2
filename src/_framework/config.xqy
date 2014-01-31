@@ -454,3 +454,11 @@ declare function config:resource-handler() {
 declare function config:controller-suffix() as xs:string {
   $CONFIG/config:controller-suffix
 };
+
+declare function config:property($name as xs:string)  as item(){
+  let $value := $CONFIG/config:properties/config:property[@name = $name]/(@resource|@value|text())[1]
+  return 
+  if($value instance of attribute()) 
+  then fn:data($value) 
+  else $value
+};

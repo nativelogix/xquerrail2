@@ -95,9 +95,9 @@ return
             }};
 
         </script>
-        <?javascript-include "vendor/jqgrid/jquery.jqGrid.src"?>
-        <?javascript-include "vendor/jqgrid/i18n/grid.locale-en"?>
-        <link rel="stylesheet" href="/resources/javascripts/vendor/jqgrid/ui.jqgrid.css"/>
-        <link rel="stylesheet" href="/resources/javascripts/vendor/jqgrid/ui.jqgrid.bootstrap.css"/>
+        <?resource-include "js/vendor/jqgrid/jquery.jqGrid.src.js"?>
+        <?resource-include "js/vendor/jqgrid/i18n/grid.locale-en.js"?>
+        <?resource-include "js/vendor/jqgrid/ui.jqgrid.css"?>
+        <?resource-include "js/vendor/jqgrid/ui.jqgrid.bootstrap.css"?>
  
 </div>
