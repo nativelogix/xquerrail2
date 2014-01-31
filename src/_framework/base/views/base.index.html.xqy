@@ -1,12 +1,12 @@
 (:@GENERATED@:)
 xquery version "1.0-ml";
 declare default element namespace "http://www.w3.org/1999/xhtml";
-import module namespace response = "http://www.xquerrail-framework.com/response" at "/_framework/response.xqy";
+import module namespace response = "http://xquerrail.com/response" at "/_framework/response.xqy";
 
-import module namespace domain = "http://www.xquerrail-framework.com/domain" at "/_framework/domain.xqy";
+import module namespace domain = "http://xquerrail.com/domain" at "/_framework/domain.xqy";
 
-import module namespace js = "http://www.xquerrail-framework.com/helper/javascript" at "/_framework/helpers/javascript-helper.xqy";
-import module namespace form = "http://www.xquerrail-framework.com/helper/form" at "/_framework/helpers/form-helper.xqy";
+import module namespace js = "http://xquerrail.com/helper/javascript" at "/_framework/helpers/javascript-helper.xqy";
+import module namespace form = "http://xquerrail.com/helper/form" at "/_framework/helpers/form-helper.xqy";
 
 
 declare option xdmp:output "indent-untyped=yes";
@@ -50,29 +50,31 @@ let $uuidKey := domain:get-field-id($domain-model/domain:element[@name = "uuid"]
 (:Editable:)
 let $editAction := 
     if($model-editable) 
-    then <node>window.location.href = "/{response:controller()}/edit.html?" + context.modelId+  '=' + rowid;</node>/text()
+    then <node>window.location.href = "/{response:controller()}/edit.html?" + context.modelId +  '=' + rowid;</node>/text()
     else <node>window.location.href = "/{response:controller()}/details.html?" + context.modelId +  '=' + rowid;</node>/text()
 return
-<div  class="container-fluid">
-    <div class="row-fluid ui-layout-north">
-        <div class="toolbar">
-          <h3><?title?></h3>    
-        </div>
+<div class="box">
+<div class="box-header">
+  <span class="title"><?title?></span>
+     <div class="btn-toolbar">
+      <div id="toolbar" class="btn-group"></div>
     </div>
-    <div class="row-fluid ui-layout-center">
-       <div class="btn-toolbar">
-          <div id="toolbar" class="btn-group">
-          
-          </div>
-       </div>
-    </div>
-    <div class="row-fluid">
+</div>
+<div  class="box-content">
+   <?if response:has-flash("save")?>
+   <?flash-message name="save"?>
+   <?endif?>
+   <?if response:has-flash("error")?>
+   <?flash-message name="save"?>
+   <?endif?>
+   <div class="row-fluid">
       <div id="list-wrapper" class="span12">
            <table id="{response:controller()}_table" class="index-grid"></table>
            <div id="{response:controller()}_table_pager"> </div>
         </div>           
         <div class="clearfix"> </div> 
     </div>
+</div>
     <script type="text/javascript">
             {form:context($response)}
             var _id = null;
@@ -80,43 +82,22 @@ return
             /*initialize your grid model*/
             var gridModel = {{
                 url: '/{response:controller()}/list.xml',
-                datatype: "xml",
+                
                 pager: '#{response:controller()}_table_pager',
                 id : "{domain:get-model-identity-field-name(response:model())}",
                 colModel: {$gridCols},
-                loadonce:false,
-                rowNum:100,
-                pgbuttons: true,
                 sortname: '{$domain-model/element[@identity eq 'true']/@name}',
-                sortorder: 'desc',                
-                //Grid Text
-                emptyrecords: "No {$modelLabel}'s Found",
-                loadtext: "Loading {$modelLabel}'s",
-                gridview: true,
-                altRows : true,
-                pgbuttons:true,
-                viewrecords :true,
-                navigator:true,
-                sortable:true,
-                rownumbers:true,
-                rowList: [20,50,100,200],
-                width: '500',
-                height: '500',
-                multiselect: false,
-                onSelectRow   : function(rowid,e) {{
-                    var gsr = jQuery(this).jqGrid('getGridParam','selrow'); 
-    			    if(gsr){{ 
-    				   var rowData = jQuery(this).getRowData(gsr);
-                       context.currentId = rowid;
-                       context.currentLabel = rowData[context.modelKeyLabel];
-                       return 
-                          true;
-                    }}
-                }},
-                ondblClickRow : function(rowid) {{
+                emptyrecords: "No {$modelLabel}s Found",
+                loadtext: "Loading {$modelLabel}s",
+                editAction: function(rowid) {{
                     {$editAction}
                 }}
-                
             }};
-           </script>
+
+        </script>
+        <?javascript-include "vendor/jqgrid/jquery.jqGrid.src"?>
+        <?javascript-include "vendor/jqgrid/i18n/grid.locale-en"?>
+        <link rel="stylesheet" href="/resources/javascripts/vendor/jqgrid/ui.jqgrid.css"/>
+        <link rel="stylesheet" href="/resources/javascripts/vendor/jqgrid/ui.jqgrid.bootstrap.css"/>
+ 
 </div>

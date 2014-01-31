@@ -2,9 +2,9 @@ xquery version "1.0-ml";
 (:~
  : Base Error Handling Template used for rendering output
 ~:)
-import module namespace response = "http://www.xquerrail-framework.com/response" at "/_framework/response.xqy";
+import module namespace response = "http://xquerrail.com/response" at "/_framework/response.xqy";
 
-declare namespace domain = "http://www.xquerrail-framework.com/domain";
+declare namespace domain = "http://xquerrail.com/domain";
 declare namespace local = "urn:local";
 
 declare default element namespace "http://www.w3.org/1999/xhtml";

@@ -3,9 +3,9 @@ xquery version "1.0-ml";
  : Base Edit Template used for rendering output
 ~:)
 declare default element namespace "http://www.w3.org/1999/xhtml";
-import module namespace domain = "http://www.xquerrail-framework.com/domain" at "/_framework/domain.xqy";
-import module namespace form = "http://www.xquerrail-framework.com/helper/form" at "/_framework/helpers/form-helper.xqy";
-import module namespace response = "http://www.xquerrail-framework.com/response" at "/_framework/response.xqy";
+import module namespace domain = "http://xquerrail.com/domain" at "/_framework/domain.xqy";
+import module namespace form = "http://xquerrail.com/helper/form" at "/_framework/helpers/form-helper.xqy";
+import module namespace response = "http://xquerrail.com/response" at "/_framework/response.xqy";
 
 declare option xdmp:output "indent-untyped=yes";
 declare variable $response as map:map external;
@@ -21,26 +21,32 @@ let $labels :=
     else 
         ("New", "Create") 
 return
-    <div>
-      <form id="form_{response:controller()}" name="form_{response:controller()}"  class="form-horizontal" method="post" action="/{response:controller()}/save.html">
+  <div class="box">
+    <div class="box-header">
+      <span class="title"> {$labels[1]}&nbsp;<?title?></span>
+    </div>
+    <div class="box-content">
+      <form id="form_{response:controller()}" name="form_{response:controller()}" class="fill-up form-horizontal" method="post" action="/{response:controller()}/save.html">
         {if($domain-model//domain:element[@type = ("binary","file") or domain:ui/@type eq "fileupload"])
           then attribute enctype{"multipart/form-data"}
           else ()
-         }                  
-         <fieldset>
-            <legend>New <?title?></legend>                 
-             <div class="controls span12">
-                {form:build-form($domain-model,$response)}
-             </div>
-             <div class="clearfix"></div>
-             <div class="form-actions"> 
-                 <button type="submit" class="btn btn-primary" href="#">{$labels[2]}
-                 </button>
-                 <button type="button" class="btn" href="#" onclick="window.location.href='/{response:controller()}/index.html';return false;">Cancel</button> 
-              </div>
-            </fieldset>
-        </form>
-       <script type="text/javascript"> 
+         } 
+        <div class="row-fluid"> 
+            <div class="span8">
+                <ul class="padded separate-sections">         
+              {for $field in form:build-form($domain-model,$response)
+              return <li class="input">{$field}</li>}
+              </ul>
+            </div>
+        </div>
+        <div class="form-actions"> 
+                <button type="submit" class="btn btn-primary" href="#">{$labels[2]}
+                </button>
+                <button type="button" class="btn btn-default" href="#" onclick="window.location.href='/{response:controller()}/index.html';return false;">Cancel</button> 
+        </div>
+      </form>
+      <script type="text/javascript"> 
         {form:context($response)}
-        </script>
+      </script>
      </div>
+  </div>

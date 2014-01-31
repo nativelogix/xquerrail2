@@ -4,7 +4,7 @@ xquery version "1.0-ml";
 : Javascript Helper library
 : Uses simple construct to build objects of json objects
 ~:)
-module  namespace helper = "http://www.xquerrail-framework.com/helper/javascript";
+module  namespace helper = "http://xquerrail.com/helper/javascript";
 
 (:~Helper functions for json ~:)
 (:~

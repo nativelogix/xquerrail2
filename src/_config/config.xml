@@ -1,6 +1,6 @@
-<config xmlns="http://www.xquerrail-framework.com/config" 
+<config xmlns="http://xquerrail.com/config" 
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.xquerrail-framework.com/domain file:../_framework/schemas/config.xsd"
+    xsi:schemaLocation="http://xquerrail.com/domain file:../_framework/schemas/config.xsd"
     >
     <!--Configurations-->
     <!--Routing Module and Configuration-->
@@ -29,13 +29,13 @@
     <default-application value="demo"/>
     <default-controller value="default"/> 
     <default-action value="index"/>    
-    <default-format value="xml"/>
+    <default-format value="html"/>
     <default-template value="main"/>
     <default-template-directory resource="/application/templates/"/>
     <default-view-directory resources="/application/views/"/>    
     
     <!--Register Your Application(s) Here-->
-    <application name="demo" namespace="http://www.xquerrail-framework.com/demo" uri="/demo">
+    <application name="demo" namespace="http://xquerrail.com/demo" uri="/demo">
         <domain resource="/demo/domains/application-domain.xml" />
         <script-directory value="/demo/resources/js/"/>
         <stylesheet-directory value="/demo/resources/css/"/>

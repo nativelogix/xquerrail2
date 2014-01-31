@@ -4,15 +4,15 @@ xquery version "1.0-ml";
  : the request/response at various points in the execution context of the dispatcher. 
  :
 ~:)
-module namespace interceptor = "http://www.xquerrail-framework.com/interceptor";
+module namespace interceptor = "http://xquerrail.com/interceptor";
 
-import module namespace config = "http://www.xquerrail-framework.com/config"
+import module namespace config = "http://xquerrail.com/config"
    at "config.xqy";
    
-import module namespace request = "http://www.xquerrail-framework.com/request"
+import module namespace request = "http://xquerrail.com/request"
    at "request.xqy";
 
-import module namespace response = "http://www.xquerrail-framework.com/response"
+import module namespace response = "http://xquerrail.com/response"
    at "response.xqy";
    
 declare option xdmp:mapping "false";
@@ -31,8 +31,9 @@ declare function interceptor:config() as element()
    fn:string-join((
        xdmp:get-request-field("_application",config:default-application()),
        xdmp:get-request-field("_controller",config:default-controller()),
-       xdmp:get-request-field("_action",config:default-action()))
-    ,":")
+       xdmp:get-request-field("_action",config:default-action()),
+       xdmp:get-request-field("_format",config:default-format())
+    ),":")
 };
 (:~
  : Returns a list of matching scopes from an interceptor configuration
@@ -68,7 +69,7 @@ declare function interceptor:before-request (
    let $function     := xdmp:function(xs:QName("interceptor:before-request"),$location-uri)
    let $config := 
       if($int/@resource) 
-      then xdmp:invoke($int/@resource)
+      then config:get-resource($int/@resource)
       else if($int/@dbresource) then
           fn:doc($int/@dbresource)
       else <config/>
@@ -88,63 +89,93 @@ declare function interceptor:before-request (
 declare function interceptor:after-request(
 $request as map:map
 ){(
-   for $int in config:get-interceptors("after-request")
-   let $_ := xdmp:log(("interceptor:ml-security::after-request",()),"debug")
-   let $location-uri := fn:concat("/_framework/interceptors/interceptor.",$int/@name,".xqy")
-   let $function     := xdmp:function(xs:QName("interceptor:after-request"),$location-uri)
-   let $config := 
-      if($int/@resource) 
-      then xdmp:invoke($int/@resource)
-      else if($int/@dbresource) then
-          fn:doc($int/@dbresource)
-      else <config/>
-   let $invoke := xdmp:apply($function,$request,$config)
-   return 
-     if($invoke instance of map:map) 
-     then request:initialize($invoke)
-     else ()  
+      interceptor:invoke-after-request(
+        $request,       
+        config:get-interceptors("after-request"),
+        fn:false()
+   )
 )};
 (:~
- : Executes all interceptors after the controller action has been called and before the response is processed by the designated engine.
+ : Recursively calls interceptors until either a redirect occurs 
+ : or all interceptors have run completely
+~:)
+declare function interceptor:invoke-after-request(
+  $request as map:map,
+  $interceptors as element(config:interceptor)*,
+  $is-redirected as xs:boolean
+) {
+  if(fn:not($is-redirected) and $interceptors) then 
+    let $int := $interceptors[1]
+    let $location-uri := fn:concat("/_framework/interceptors/interceptor.",$int/@name,".xqy")
+    let $function     := xdmp:function(xs:QName("interceptor:after-request"),$location-uri)
+    let $config := 
+       if($int/@resource) 
+       then config:get-resource($int/@resource)
+       else if($int/@dbresource) then
+           fn:doc($int/@dbresource)
+       else <config/>
+    let $invoke := xdmp:apply($function,$request,$config)
+    let $_ := request:initialize($request)
+    return
+      if(request:redirect()) then interceptor:invoke-after-request($request,(),fn:true())
+      else interceptor:invoke-after-request($request,$interceptors[2 to fn:last()],fn:false())
+  else $request
+};
+
+(:~
+ : Executes all interceptors after the controller action has been called 
+ : and before the response is processed by the designated engine. 
+ : @param $request the request map
 ~:)
 declare function interceptor:before-response(
-)
+  $request as map:map?,
+  $response as item()*
+) as item()*
 {(
-   for $int in config:get-interceptors("before-response")
-   let $_ := xdmp:log(("interceptor:ml-security::before-response",()),"debug")
-   let $location-uri := fn:concat("/_framework/interceptors/interceptor.",$int/@name,".xqy")
-   let $function     := xdmp:function(xs:QName("interceptor:before-response"),$location-uri)
-   let $config := 
-      if($int/@resource) 
-      then xdmp:invoke($int/@resource)
-      else if($int/@dbresource) then
-          fn:doc($int/@dbresource)
-      else <config/>
-   let $invoke := xdmp:apply($function,$config)
-   return 
-     if($invoke instance of map:map) 
-     then request:initialize($invoke)
-     else ()  
+   let $_response := $response
+   let $_ := 
+        for $int in config:get-interceptors("before-response")
+        let $location-uri := fn:concat("/_framework/interceptors/interceptor.",$int/@name,".xqy")
+        let $function     := xdmp:function(xs:QName("interceptor:before-response"),$location-uri)
+        let $config := 
+           if($int/@resource) 
+           then config:get-resource($int/@resource)
+           else if($int/@dbresource) then
+               fn:doc($int/@dbresource)
+           else <config/>
+        let $invoke := xdmp:apply($function,$request,$response,$config)
+        return
+         xdmp:set($_response,  
+          if($invoke instance of map:map) 
+          then response:set-response($invoke)
+          else $_response)
+   return $_response
 )};
+
 (:~
  : Executes all interceptors after the response has been rendered by the engine
  : and is flushed out to the calling context.
+ : it is important that each interceptor is ordered correctly to ensure each interceptor 
+ : can handle the response properly
+ : @param $request - the request map:map
+ : @param $response - the response output after invoke-response is called.
+ : @return any output by passing through all interceptors
 ~:)
 declare function interceptor:after-response(
-){(
-   for $int in config:get-interceptors("after-response")
-   let $_ := xdmp:log(("interceptor:ml-security::after-response",()),"debug")
-   let $location-uri := fn:concat("/_framework/interceptors/interceptor.",$int/@name,".xqy")
-   let $function     := xdmp:function(xs:QName("interceptor:after-response"),$location-uri)
-   let $config := 
-      if($int/@resource) 
-      then xdmp:invoke($int/@resource)
-      else if($int/@dbresource) then
-          fn:doc($int/@dbresource)
-      else <config/>
-   let $invoke := xdmp:apply($function,$config)
-   return 
-     if($invoke instance of map:map) 
-     then request:initialize($invoke)
-     else ()  
+  $request as map:map,
+  $response as item()*
+) as item()*{(
+   let $_response := $response
+   let $_ := 
+        for $int in config:get-interceptors("after-response")
+        let $location-uri := fn:concat("/_framework/interceptors/interceptor.",$int/@name,".xqy")
+        let $function     := xdmp:function(xs:QName("interceptor:after-response"),$location-uri)
+        let $config := 
+           if($int/@resource) 
+           then config:get-resource($int/@resource)
+           else if($int/@dbresource) then
+                fn:doc($int/@dbresource)
+           else <config/>
+        return xdmp:set($_response, xdmp:apply($function,$request,$response,$config))
+   return  $_response
 )};

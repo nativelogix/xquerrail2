@@ -3,16 +3,23 @@ xquery version "1.0-ml";
  : Performs core engine for transformation and base implementation for 
  : different format engines
 ~:)
-module namespace engine = "http://www.xquerrail-framework.com/engine";
+module namespace engine = "http://xquerrail.com/engine";
 
-import module namespace request = "http://www.xquerrail-framework.com/request"
+import module namespace request = "http://xquerrail.com/request"
    at "/_framework/request.xqy";
-import module namespace response = "http://www.xquerrail-framework.com/response"
-   at "/_framework/response.xqy";
-import module namespace config = "http://www.xquerrail-framework.com/config"
-   at "/_framework/config.xqy";
    
-declare namespace tag = "http://www.xquerrail-framework.com/tag";    
+import module namespace response = "http://xquerrail.com/response"
+   at "/_framework/response.xqy";
+   
+import module namespace config = "http://xquerrail.com/config"
+   at "/_framework/config.xqy";
+
+import module namespace json="http://marklogic.com/xdmp/json"
+     at "/MarkLogic/json/json.xqy";
+     
+
+
+declare namespace tag = "http://xquerrail.com/tag";    
 
 declare default function namespace "http://www.w3.org/2005/xpath-functions";
 
@@ -110,8 +117,9 @@ declare function engine:visit($node)
  :  Returns boolean value of whether a node has been visited.
 ~:)
 declare function engine:visited($node)
-{
-    fn:exists(map:get($visitor,fn:generate-id($node)))
+{   if($node instance of json:object) 
+    then fn:exists(map:get($visitor,fn:generate-id(<x>{$node}</x>/*)))
+    else fn:exists(map:get($visitor,fn:generate-id($node)))
 };
 
 (:~
@@ -307,6 +315,24 @@ declare function engine:template-uri($name)
   fn:concat(config:application-directory(response:application()),"/templates/",$name,".html.xqy")
 };
 
+declare function engine:module-file-exists($path as xs:string) as xs:boolean
+{
+   let $fs-path := if(xdmp:platform() eq "winnt") then "\\" else "/"
+   return
+   if(xdmp:modules-database() eq 0) 
+   then xdmp:filesystem-file-exists(
+           fn:concat(xdmp:modules-root(),$fs-path,fn:replace($path,"\\|/",$fs-path))
+        )
+   else 
+      xdmp:eval('declare variable $uri as xs:string external ;
+      fn:doc-available($uri)',
+      (fn:QName("","uri"),$path),
+         <options xmlns="xdmp:eval">
+            <database>{xdmp:modules-database()}</database>
+         </options>   
+      )
+};
+
 declare function engine:view-exists($view-uri as xs:string) as xs:boolean
 {
 	if (xdmp:modules-database() ne 0) then
@@ -321,25 +347,35 @@ declare function engine:view-exists($view-uri as xs:string) as xs:boolean
 	else
 		xdmp:uri-is-file($view-uri)
 };
+declare function engine:view-uri($controller,$action) {
+  engine:view-uri($controller,$action,config:default-format())
+};
 (:~
  : Returns a view URI based on a controller/action
 ~:)
-declare function engine:view-uri($controller,$action)
+declare function engine:view-uri($controller,$action,$format)
+{ 
+   engine:view-uri($controller,$action,$format,fn:true())
+};
+(:~
+ : Returns a view URI based on a controller/action
+~:)
+declare function engine:view-uri($controller,$action,$format,$checked as xs:boolean)
 {
 
-  let $view-uri := fn:concat(config:application-directory(response:application()),"/views/",$controller,"/",$controller,".",$action,".html.xqy")
+  let $view-uri := fn:concat(config:application-directory(response:application()),"/views/",$controller,"/",$controller,".",$action,".",$format,".xqy")
   return 
   if(engine:view-exists($view-uri)) 
   then $view-uri
   else 
-    let $base-view-uri := fn:concat(config:base-view-directory(), "/base.", $action, ".html.xqy")
+    let $base-view-uri := fn:concat(config:base-view-directory(), "/base.", $action, ".",$format, ".xqy")
     return
       if(engine:view-exists($base-view-uri)) then 
          $base-view-uri
-      else 
-        fn:error(xs:QName("VIEW-NOT-EXISTS"),"View does not exist ",($view-uri,$base-view-uri))
+      else if($checked) then 
+        fn:error(xs:QName("ERROR"),"View Does not exist",$base-view-uri)
+      else $view-uri
 };
-
 declare function engine:render-template($response)
 {
     let $template-uri := 
@@ -376,12 +412,14 @@ declare function engine:render-partial($response)
 (:Documentation:)
 declare function engine:render-view()
 {
-    let $view-uri := engine:view-uri(fn:data(response:controller()),fn:data(response:view()))
-    for $n in xdmp:invoke($view-uri,(
-            xs:QName("response"),response:response()
-        ))
+    let $view-uri := engine:view-uri(fn:data(response:controller()),fn:data((response:action(),response:view())[1]),fn:data(response:format()))
     return 
-      engine:transform($n)
+    if($view-uri and engine:view-exists($view-uri))
+    then
+         for $n in xdmp:invoke($view-uri,(xs:QName("response"),response:response() ))
+         return 
+           engine:transform($n)
+    else fn:error(xs:QName("VIEW-NOT-EXISTS"),"View does not exist ",($view-uri))
 };
 
 declare function engine:transform-template($node)
@@ -419,7 +457,7 @@ declare function engine:transform-dynamic($node as node())
         else 
           let $name := fn:local-name($node)
           let $func-name := xs:QName(fn:concat("tag:apply"))
-          let $func-uri  := fn:concat("/application/tags/",$name,"-tag.xqy")
+          let $func-uri  := fn:concat(config:application-directory(response:application()),"/tags/",$name,"-tag.xqy")
           let $func := xdmp:function($func-name,$func-uri)
           return
              xdmp:apply($func,$node,response:response())
@@ -436,6 +474,47 @@ declare function engine:transform-xsl($node) {
    let $xsl    := $_node/@xsl
    return
        xdmp:xslt-invoke($xsl,$source)
+};
+
+declare function engine:transform-to-json($node) {
+   let $_node    := xdmp:unquote(fn:concat("<to-json ",fn:data($node),"/>"))/node()
+   let $source   := xdmp:value($_node/@source)
+   let $strategy := ($_node/@strategy,"full")[1]
+   let $config   := json:config($strategy)
+   return 
+     xdmp:from-json(json:transform-to-json($source,$config))
+};
+
+declare function engine:get-role-names() {
+   xdmp:eval('
+     import module namespace sec="http://marklogic.com/xdmp/security" at 
+         "/MarkLogic/security.xqy";
+     sec:get-role-names(xdmp:get-current-roles()) ! xs:string(.)
+   ',
+   (),
+   <options xmlns="xdmp:eval">
+     <database>{xdmp:security-database()}</database>
+   </options>)
+};
+
+declare function engine:transform-role($node) {
+  let $tag_data := xdmp:unquote(fn:concat("<role ",fn:data($node)," />"))/*
+  let $role-names := fn:tokenize($tag_data/@roles,",|\s") ! fn:normalize-space(.)
+  let $endrole := $node/following-sibling::processing-instruction("endrole")[1]
+  let $is_closed := if($endrole) then () else fn:error(xs:QName("MISSING-END-TAG"),"slot tag is missing end tag <?endrole?>")
+  let $rolecontent := $node/following-sibling::node()[. << $endrole]
+  let $admin-role := xdmp:role("admin")
+  let $sys-roles :=  engine:get-role-names()
+  let $_ := xdmp:log(($sys-roles,"rolenames:",$role-names))
+  return
+  (  engine:consume($endrole),
+     if($sys-roles = $role-names) 
+     then (     
+        xdmp:log("Is in Role"),
+        for $n in $rolecontent return (engine:transform($n),engine:consume($n))
+     )
+     else for $content in $rolecontent return engine:consume($content)
+  )  
 };
 (:
   Core processing-instructions and any other data should be handled here
@@ -454,6 +533,8 @@ declare function engine:transform($node as item())
          case processing-instruction("slot") return engine:transform-slot($node)
          case processing-instruction("echo") return engine:transform-echo($node)
          case processing-instruction("xsl") return engine:transform-xsl($node)
+         case processing-instruction("to-json") return engine:transform-to-json($node)
+         case processing-instruction("role") return engine:transform-role($node)
          case processing-instruction() return engine:transform-dynamic($node)
          case element() return
            element {fn:node-name($node)}

@@ -1,4 +1,4 @@
-module namespace form-lists = "http://www.xquerrail-framework.com/formbuilder/lists";
+module namespace form-lists = "http://xquerrail.com/formbuilder/lists";
 declare variable $countries := 
   <list name="Country"> 
     <option value="United States">United States</option> 

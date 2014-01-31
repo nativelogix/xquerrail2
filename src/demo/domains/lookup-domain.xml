@@ -1,0 +1,36 @@
+<domain xmlns="http://xquerrail.com/domain"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://xquerrail.com/domain ../../_framework/schemas/domain.xsd">
+    <name>lookup</name>
+    <content-namespace/>
+    <model name="audience" key="uuid" keyLabel="name" persistence="directory" label="Audience" extends="base">
+        <directory>/lookup/audiences/</directory>
+        <navigation sortField="name"/>
+        <element name="name" type="string" label="Name"></element>
+    </model>
+    <controller name="audience" model="audience" label="Audience" class="lookup"/>
+    
+    <model name="sector" persistence="directory" key="uuid" keyLabel="name"  label="Sectors" extends="base">
+        <directory>/lookup/sectors/</directory>
+        <navigation sortField="name"/>
+        <element name="name" type="string" label="Name"></element>
+    </model>
+    <controller name="sector" model="sector" label="Sectors" class="lookup"/>
+    
+    <model name="productFeature" persistence="directory" key="uuid" keyLabel="name" label="Product Feature" extends="base">
+        <directory>/lookup/sectors/</directory>
+        <navigation sortField="name"/>
+        <element name="name" type="string" label="Name"></element>
+        <element name="version" type="reference" reference="model:productVersion:reference" label="MarkLogic Version"></element>
+    </model>
+    <controller name="productFeatures" model="productFeature" label="Product Features" class="lookup"/>
+    
+
+    <model name="productVersion" persistence="directory" key="uuid" keyLabel="name" label="Product Version" extends="base">
+        <directory>/lookup/sectors/</directory>
+        <navigation sortField="name"/>
+        <element name="name" type="string" label="Name"></element>
+    </model>
+    <controller name="productVersion" model="productVersion" label="Product Versions" class="lookup"/>
+    
+</domain>

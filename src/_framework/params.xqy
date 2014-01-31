@@ -3,7 +3,7 @@ xquery version "1.0-ml";
 (:~
  : Utility library for building parameter maps
 ~:)
-module namespace params = "http://www.xquerrail-framework.com/params";
+module namespace params = "http://xquerrail.com/params";
 
 declare variable $PARAMS as map:map := map:map();
 

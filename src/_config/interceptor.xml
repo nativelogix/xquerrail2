@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<config xmlns="http://www.xquerrail-framework.com/config/interceptor">
+<config xmlns="http://xquerrail.com/config/interceptor">
    <scope id="login" context="application:default:login" action="before-request">
       <interceptor name="framework:interceptor:ml-security"/>
    </scope>

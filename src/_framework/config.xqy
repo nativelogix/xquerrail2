@@ -4,17 +4,17 @@
  :)
 xquery version "1.0-ml";
 
-module namespace config = "http://www.xquerrail-framework.com/config";
+module namespace config = "http://xquerrail.com/config";
 
-import module namespace response = "http://www.xquerrail-framework.com/response"
+import module namespace response = "http://xquerrail.com/response"
    at "/_framework/response.xqy";
    
-import module namespace request  = "http://www.xquerrail-framework.com/request"
+import module namespace request  = "http://xquerrail.com/request"
    at "/_framework/request.xqy";
 
-declare namespace domain = "http://www.xquerrail-framework.com/domain";
+declare namespace domain = "http://xquerrail.com/domain";
 
-declare namespace routing = "http://www.xquerrail-framework.com/routing";   
+declare namespace routing = "http://xquerrail.com/routing";   
 
 declare option xdmp:mapping "false";
 
@@ -36,50 +36,50 @@ declare variable $CONFIG  :=
 
 (:~
  : Defines the default base path framework
-~:)
+ :)
 declare variable $FRAMEWORK-PATH           := "/_framework";
 (:~
  : Defines the default base path for engines
-~:)
+ :)
 declare variable $DEFAULT-ENGINE-PATH      := "/_framework/engines";
 (:~
  : Defines the default base path for all interceptors
-~:)
+ :)
 declare variable $DEFAULT-INTERCEPTOR-PATH := "/_framework/interceptors";
 (:~
  : Defines the default base path for all dispatches
-~:)
+ :)
 declare variable $DEFAULT-DISPATCHER-PATH  := "/_framework/dispatchers";
 (:~
  : Defines the base implementation path for controllers,models and views
-~:)
+ :)
 declare variable $DEFAULT-BASE-PATH        := "/_framework/base";
 (:~
  : Defines the default location of views used in dynamic view functions
-~:)
+ :)
 declare variable $DEFAULT-VIEWS-PATH       := fn:concat($DEFAULT-BASE-PATH,"/views");
 (:~
  : Defines the default location of templates in dynamic ui functions
-~:)
+ :)
 declare variable $DEFAULT-TEMPLATE-PATH    := fn:concat($DEFAULT-BASE-PATH,"/templates");
 
 (:~
  : Defines the Default Controller Resources
-~:)
+ :)
 declare variable $DEFAULT-CONTROLLER-RESOURCE  := fn:concat($DEFAULT-BASE-PATH,"/base-controller.xqy");
 (:~
  : Defines the Default Model Resource 
-~:)
+ :)
 declare variable $DEFAULT-MODEL-RESOURCE       := fn:concat($DEFAULT-BASE-PATH,"/base-model.xqy");
 
 
 (:~
  : Defines the default anonymous-user configuration
-~:)
+ :)
 declare variable $DEFAULT-ANONYMOUS-USER   := "anonymous-user";
 (:~
  : Defines the default routing module configuration
-~:)
+ :)
 declare variable $DEFAULT-ROUTING-MODULE   := "/_framework/routing.xqy";
 
 (:Error Codes:)
@@ -98,18 +98,25 @@ declare function config:refresh-app-cache() {
    for $sf in xdmp:get-server-field-names()
    return 
    if(fn:starts-with($sf,$DOMAIN-CACHE-KEY))  then
+      try {
       let $app-path := config:application-directory(fn:substring-after($sf, $DOMAIN-CACHE-KEY))
       let $domain-key := fn:concat($app-path,"/domains/application-domain.xml")
       let $config := config:get-resource(fn:concat($app-path,"/domains/application-domain.xml"))
       let $config := config:_load-domain($config)
       return (
         xdmp:set-server-field($sf,$config)
-      )
+      ) } catch($ex) {
+        xdmp:set-server-field($sf,()),
+        $ex
+      }
    else ()
+};
+declare function config:version() {
+  ()
 };
 (:~
  : Returns a list of applications from the config.xml
-~:)
+ :)
 declare function config:get-applications() {
    $CONFIG/domain:application
 };
@@ -119,7 +126,7 @@ declare function config:get-applications() {
  : how the application server is configured.
  : If the modules are in the filesystem.  It invokes the modules
  : If the modules are in a modules database then it evals the call to the modules database using the uri
-~:)
+ :)
 declare function config:get-resource($uri as xs:string) {
     if(xdmp:modules-database() = 0 ) 
     then xdmp:invoke($uri)
@@ -160,7 +167,12 @@ declare function config:get-config-value($node as element()?) {
  :)
  declare function config:default-application()
  {
-    ($CONFIG/config:default-application/@value/fn:string(),"application")[1]
+    if(fn:count($CONFIG/config:application) = 1) 
+    then $CONFIG/config:application/@name/fn:normalize-space(.) 
+    else 
+    ($CONFIG/config:default-application/@value/fn:string(),
+     "application"
+    )[1]
  }; 
 (:~
  : Returns the default controller for entire application usually default
@@ -170,6 +182,9 @@ declare function config:default-controller()
   fn:string($CONFIG/config:default-controller/@value)
 };
 
+(:~
+ : Returns the default template assigned to the application
+~:)
 declare function config:default-template($application-name) {
   (
    config:get-application($application-name)/config:default-template/@value/fn:string(),
@@ -177,15 +192,6 @@ declare function config:default-template($application-name) {
    "main"
    )[1]
 };
-(:~
- : Returns the resource directory for framework defined in /_config/config.xml
-~:)
-declare function config:resource-directory() as xs:string
-{
-   if(fn:not($CONFIG/config:resource-directory))
-   then "/resources/"
-   else fn:data($CONFIG/config:resource-directory/@resource)
-}; 
 
 (:~
  : Returns the default action 
@@ -217,7 +223,44 @@ declare function config:get-dispatcher()
  :)
 declare function config:get-application($application-name as xs:string)
 {
-   $CONFIG/config:application[@name eq $application-name]
+   let $application := $CONFIG/config:application[@name eq $application-name]
+   return
+      if($application) 
+      then $application 
+      else fn:error(xs:QName("INVALID-APPLICATION"),"Application with '" || $application-name || "' does not-exist",$application-name)
+};
+
+
+(:~
+ : Returns the resource directory for framework defined in /_config/config.xml
+ :)
+declare function config:resource-directory() as xs:string
+{
+   if(fn:not($CONFIG/config:resource-directory))
+   then "/resources/"
+   else fn:data($CONFIG/config:resource-directory/@resource)
+}; 
+
+(:~
+ : Returns the engine for processing requests satisfying the request
+ :)
+declare function config:get-base-model-location($model-name as xs:string) {
+
+    let $modelSuffix := fn:data($CONFIG/config:model-suffix/@value)
+    let $path := fn:concat("/model/", $model-name, $modelSuffix, ".xqy") 
+    return
+     if(xdmp:uri-is-file($path))
+     then $path
+     else fn:concat("/_framework/base/base", $modelSuffix, ".xqy")
+};
+
+(:~
+ : Gets the current view directory defined in the configuration
+ :)
+declare function config:base-view-directory() {
+   let $dir :=  fn:data($CONFIG/config:base-view-directory/@value)
+   return 
+    if ($dir) then $dir else "/_framework/base/views"
 };
 
 (:~
@@ -225,7 +268,18 @@ declare function config:get-application($application-name as xs:string)
  :)
 declare function config:application-directory($application-name)
 {
-   fn:concat(config:get-application($application-name)/@uri)
+   if($application-name instance of element(config:application))
+   then $application-name/@uri
+   else config:get-application($application-name)/@uri
+};
+(:~
+ : Get the current application directory
+ :)
+declare function config:application-namespace($application-name)
+{
+   if($application-name instance of element(config:application))
+   then $application-name/@uri
+   else config:get-application($application-name)/@namespace
 };
 (:~
  : Get the current application script directory
@@ -236,24 +290,16 @@ declare function config:application-script-directory($application-name)
     config:resource-directory())[1]
 };
 (:~
- : Get the current application directory
+ : Get the current application stylesheet directory
  :)
-declare function config:application-stylesheet-directory($name)
+declare function config:application-stylesheet-directory($application-name)
 {
    (
-    fn:data(config:get-application($name)/config:stylesheet-directory/@value),
+    fn:data(config:get-application($application-name)/config:stylesheet-directory/@value),
     config:resource-directory()
    )[1]
 };
 
-(:~
- : Gets the current view directory defined in the configuration
-~:)
-declare function config:base-view-directory() {
-   let $dir :=  fn:data($CONFIG/config:base-view-location/@value)
-   return 
-    if ($dir) then $dir else "/_framework/base/views"
-};
 
 (:~
  : Gets the default anonymous user
@@ -295,7 +341,7 @@ declare function config:get-domain($application-name)
 };
 (:~
  : Function loads the domain internally and resolves import references
-~:)
+ :)
 declare %private function config:_load-domain(
 $domain as element(domain:domain)
 ) {
@@ -303,12 +349,11 @@ $domain as element(domain:domain)
     let $imports := 
         for $import in $domain/domain:import
         return
-            config:get-resource(fn:concat($app-path,"/domains/",$import/@resource))    
-    
+        config:get-resource(fn:concat($app-path,"/domains/",$import/@resource))        
     return 
         element domain {
-         namespace domain {"http://www.xquerrail-framework.com/domain"},
-         attribute xmlns {"http://www.xquerrail-framework.com/domain"},
+         namespace domain {"http://xquerrail.com/domain"},
+         attribute xmlns {"http://xquerrail.com/domain"},
          $domain/@*,
          $domain/(domain:name|domain:content-namespace|domain:application-namespace|domain:description|domain:author|domain:version|domain:declare-namespace|domain:default-collection),
          ($domain/domain:model,$imports/domain:model),
@@ -338,7 +383,7 @@ declare function config:get-route-module() {
  :)
 declare function config:get-engine($response as map:map)
 {
-   let $_ := response:set-response($response)
+   let $_ := response:initialize($response)
    return
      if(response:format() eq "html") 
      then "engine.html"
@@ -349,20 +394,10 @@ declare function config:get-engine($response as map:map)
      else fn:string($CONFIG/config:default-engine/@value)
 };
 
+
 (:~
- : Returns the engine for processing requests satisfying the request
+ : Returns the Error Handler location from the configuration
  :)
-declare function config:get-model-xqy-path($model-name as xs:string) {
-
-    let $modelSuffix := fn:data($CONFIG/config:model-suffix/@value)
-    let $path := fn:concat("/model/", $model-name, $modelSuffix, ".xqy")
-    
-    return
-     if(xdmp:uri-is-file($path))
-     then $path
-     else fn:concat("/_framework/base/base", $modelSuffix, ".xqy")
-};
-
 declare function config:error-handler()
 { 
   (
@@ -371,7 +406,9 @@ declare function config:error-handler()
     "/_framework/error.xqy"
   )[1]
 };
-(:Returns the list of all interceptors defined in the system:)
+(:~
+ : Returns the list of all interceptors defined in the system
+ :)
 declare function config:get-interceptors()
 {
   config:get-interceptors(())
@@ -379,7 +416,7 @@ declare function config:get-interceptors()
 
 (:~
  : Returns all interceptors that match a given value
-~:)
+ :)
 declare function config:get-interceptors(
   $value as xs:string?
 ){
@@ -397,7 +434,7 @@ declare function config:get-interceptors(
 };
 (:~
  : Returns the default interceptor configuration.  If none is configured will map to the default
-~:)
+ :)
 declare function config:interceptor-config() as xs:string?
 {
    (
@@ -405,4 +442,15 @@ declare function config:interceptor-config() as xs:string?
      "/_config/interceptor.xml"
    )[1]
    
+};
+(:~
+ : The resource handler is responsible for accepting resource requests and performing specific actions
+ : against the content like compression or other things to augment the resource
+ :)
+declare function config:resource-handler() {
+  $CONFIG/config:resource-handler
+};
+
+declare function config:controller-suffix() as xs:string {
+  $CONFIG/config:controller-suffix
 };

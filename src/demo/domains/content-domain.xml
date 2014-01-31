@@ -1,0 +1,69 @@
+<domain xmlns="http://xquerrail.com/domain"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://xquerrail.com/domain ../../_framework/schemas/domain.xsd">
+    <model name="presentation" key="uuid" keyLabel="title" persistence="directory" label="Presentation" extends="base">
+        <directory>/content/presentation/</directory>
+      
+        <navigation importable="true" sortField="title"/>
+        <element name="title" type="string" label="Title"></element>
+        <element name="audience" type="reference" reference="model:audience:reference" label="Audience" occurrence="*"></element>
+        <element name="creator" type="reference" reference="model:user:reference" label="Creator"></element>
+        <element name="tags" type="string" label="Tags" occurrence="*">
+            <ui type="tag" tag="demo:tag-editor.html.xqy"/>
+        </element>
+        <container name="slides" label="Slides">
+            <element name="slide" type="instance" instance="model:presentationSlide" label="Slide" occurrence="*">
+            </element>
+        </container>        
+    </model>
+    
+    <model name="presentationSlide" persistence="abstract" label="Slide"  key="uuid" keyLabel="title" >
+        <element name="index" type="integer" label="Index"></element>
+        <element name="ppxml" type="schema-element" label="Text"/>
+        <element name="image" type="binary" label="Thumbnail">
+            <navigation listable="false"/>
+        </element>
+    </model>
+
+    <model name="demo-application" persistence="directory" label="Demo Application" key="uuid" keyLabel="title" extends="base"> 
+        <directory>/content/demos/</directory>
+        <element name="title" type="string" label="Title"></element>
+        <element name="url" type="anyURI" label="URL" occurrence="*"></element>
+        <element name="audience" type="reference" reference="model:audience:reference" label="Audience" occurrence="*"></element>
+        <element name="sector" type="reference" reference="model:sector:reference" label="Sector" occurrence="*"></element>
+        <element name="productFeature" type="reference" reference="model:productFeature:reference" label="Product Feature" occurrence="*"></element>
+        <element name="contact" type="reference" reference="model:user:reference" label="Creator"></element>
+        <element name="status" type="string" label="Status">
+            <constraint inList="demoStatus"/>
+        </element>
+        <element name="hosting" type="string" label="Hosting">
+            <constraint inList="hosting"/>
+        </element>
+        <element name="tags" type="string" label="Tags" occurrence="*">
+            <ui tag="demo:tag-editor.html.xqy" class="tag"/>
+        </element>
+        <element name="overview" type="schema-element" label="Overview">
+            <navigation listable="false"/>
+        </element>
+        <element name="script" type="schema-element" label="Script">
+            <navigation listable="false"/>
+            <ui type="html-editor" tag="demo:tag-editor.html.xqy"/>
+        </element>
+        <element name="sourceCode" type="string" label="Source Code Location">
+            
+        </element>
+        <optionlist name="demoStatus">
+            <option>Unknown</option>
+            <option>Validated</option>
+            <option>Stable</option>
+            <option>Unreliable</option>
+        </optionlist>
+        
+        <optionlist name="hosting">
+            <option label="Internal">internal</option>
+            <option label="External">external</option>
+        </optionlist>
+    </model>
+    <controller name="demos" model="demo-application" label="Demo Applications" class="content"/>
+    <controller name="presentations" model="presentation" label="Presentations" class="content"/> 
+</domain>

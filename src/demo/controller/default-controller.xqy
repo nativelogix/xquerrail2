@@ -3,12 +3,12 @@ xquery version "1.0-ml";
  : Default Application Controller
  : @author garyvidal@hotmail.com
 ~:)
-module namespace controller = "http://www.xquerrail-framework.com/demo/controller/default";
+module namespace controller = "http://xquerrail.com/demo/controller/default";
 
-import module namespace request = "http://www.xquerrail-framework.com/request"
+import module namespace request = "http://xquerrail.com/request"
     at "/_framework/request.xqy";
     
-import module namespace response = "http://www.xquerrail-framework.com/response"
+import module namespace response = "http://xquerrail.com/response"
     at "/_framework/response.xqy";
 
 declare function controller:initialize($request)

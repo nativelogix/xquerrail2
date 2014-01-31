@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration xmlns="http://www.xquerrail-framework.com/configuration">
-    <security xmlns="http://www.xquerrail-framework.com/security">
+<configuration xmlns="http://xquerrail.com/configuration">
+    <security xmlns="http://xquerrail.com/security">
         <user>
           <name>anonymous</name>
           <roles>
@@ -16,7 +16,7 @@
            </privileges>
         </role>
     </security>
-    <databases xmlns="http://www.xquerrail-framework.com/database">
+    <databases xmlns="http://xquerrail.com/database">
         <!--Configure any database forest defaults required by your application-->
         <database-defaults>   
             <database-name>%application%</database-name>

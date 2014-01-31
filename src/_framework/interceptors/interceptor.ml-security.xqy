@@ -1,10 +1,10 @@
 xquery version "1.0-ml";
 
-module namespace ml-security = "http://www.xquerrail-framework.com/interceptor";
+module namespace ml-security = "http://xquerrail.com/interceptor";
 
-import module namespace interceptor = "http://www.xquerrail-framework.com/interceptor" at "/_framework/interceptor.xqy";
-import module namespace request = "http://www.xquerrail-framework.com/request" at "/_framework/request.xqy";
-import module namespace config  = "http://www.xquerrail-framework.com/config"  at "/_framework/config.xqy";
+import module namespace interceptor = "http://xquerrail.com/interceptor" at "/_framework/interceptor.xqy";
+import module namespace request = "http://xquerrail.com/request" at "/_framework/request.xqy";
+import module namespace config  = "http://xquerrail.com/config"  at "/_framework/config.xqy";
 
    
 declare function ml-security:name()

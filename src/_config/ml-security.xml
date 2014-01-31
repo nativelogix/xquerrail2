@@ -1,4 +1,4 @@
-<config xmlns="http://www.xquerrail-framework.com/config">
+<config xmlns="http://xquerrail.com/config">
     <login-url url="/login.html"/>
     <use-csrf value="true"/>
     <anonymous-user value="anonymous"/>
@@ -6,7 +6,7 @@
         <allow-role>anonymous</allow-role>
     </scope>
     <scope context="demo:default:logout">
-        <allow-role>anonymous</allow-role>
+        <deny-role>anonymous</deny-role>
     </scope>
     <scope context="demo:default:*">
         <allow-role>*</allow-role>
@@ -15,11 +15,6 @@
         <allow-role>*</allow-role>
     </scope>
     <scope context="*">
-        <allow-role>demo-reader</allow-role>
-        <allow-role>demo-writer</allow-role>
-        <allow-role>demo-executor</allow-role>
-        <allow-role>demo-loader</allow-role>
-        <allow-role>admin</allow-role>
         <deny-role>anonymous</deny-role>
     </scope>
 </config>

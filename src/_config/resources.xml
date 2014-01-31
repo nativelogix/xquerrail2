@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<handler xmlns="http://xquerrail.com/handler">
+    <handle include="/**/*.xqy" action="invoke">
+                
+    </handle>
+</handler>

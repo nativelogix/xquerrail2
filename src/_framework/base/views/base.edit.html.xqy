@@ -4,11 +4,11 @@ xquery version "1.0-ml";
 ~:)
 declare default element namespace "http://www.w3.org/1999/xhtml";
 
-import module namespace form     = "http://www.xquerrail-framework.com/helper/form" at "/_framework/helpers/form-helper.xqy";
+import module namespace form     = "http://xquerrail.com/helper/form" at "/_framework/helpers/form-helper.xqy";
 
-import module namespace response = "http://www.xquerrail-framework.com/response" at "/_framework/response.xqy";
+import module namespace response = "http://xquerrail.com/response" at "/_framework/response.xqy";
 
-import module namespace domain   = "http://www.xquerrail-framework.com/domain" at "/_framework/domain.xqy";
+import module namespace domain   = "http://xquerrail.com/domain" at "/_framework/domain.xqy";
 
 declare option xdmp:output "indent-untyped=yes";
 
@@ -22,39 +22,40 @@ let $labels := ("Update","Cancel")
 let $actions :=   
     <div class="btn-toolbar form-actions">
         <div class="btn-group">
-             <button type="submit" class="btn btn-primary" href="#">
-              <b class="icon-ok-sign icon-white"></b> Save
-              </button>
-              <button type="button" class="btn" onclick="return deleteForm('form_{response:controller()}','{response:controller()}_table');">
+             <button type="submit" id="save-button" class="btn btn-primary"><b class="icon-ok-sign icon-white"></b> Save</button>
+              <button type="button" id="delete-button" class="btn btn-default" onclick="return deleteForm('form_{response:controller()}','{response:controller()}_table');">
               <b class="icon-remove"></b>  Delete
               </button>
-              <button type="button" class="btn" href="#" onclick="window.location.href='/{response:controller()}';">
+              <button type="button" id="cancel-button" class="btn btn-default  " href="#" onclick="window.location.href='/{response:controller()}';">
               <b class="icon-hand-left"></b> Cancel</button>
         </div>
-      </div>
+    </div>
 return
-<div>
-
-  <div>
-     <form id="form_{response:controller()}" name="form_{response:controller()}"  class="form-horizontal" method="post"
+<div class="box">
+  <div class="box-header">
+      <span class="title"> {$labels[1]}&nbsp;<?title?></span>
+  </div>   
+  <div class="box-content">
+     <form id="form_{response:controller()}" name="form_{response:controller()}"  class="fill-up form-horizontal" method="post"
                  action="/{response:controller()}/save.html">
        {if($domain-model//domain:element[@type = ("binary","file") or domain:ui/@type eq "fileupload"])
          then attribute enctype{"multipart/form-data"}
          else ()
-        }                     
-             <fieldset>
-               <legend>Edit <?title?></legend>
-        
-                {$actions}                
-                <div class="controls span12">
-                   {form:build-form($domain-model,$response)}
-                </div>
-                <div class="clearfix"></div>
-                <div class="form-actions"> 
-                    <button type="submit" class="btn btn-primary" href="#"><b class="icon-ok-sign icon-white"></b> Save</button> 
-                </div>
-               </fieldset>
-           </form>
+        }        
+        {$actions}
+        <div class="row-fluid"> 
+            <div class="span8">
+                 <ul  class="padded separate-sections">
+                    {for $field in form:build-form($domain-model,$response)
+                   return <li class="input">{$field}</li>}
+                 </ul>
+                 <div class="clearfix"></div>
+            </div>
+           </div>
+           <div class="form-actions"> 
+                <button type="submit" id="save-button" class="btn btn-primary" href="#"><b class="icon-ok-sign icon-white"></b> Save</button> 
+            </div>
+       </form>
    </div>
    <script type="text/javascript"> 
     {form:context($response)}

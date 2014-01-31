@@ -5,21 +5,18 @@ xquery version "1.0-ml";
 : @version  1.0
 ~:)
 
-module namespace model = "http://www.xquerrail-framework.com/model/base";
+module namespace model = "http://xquerrail.com/model/base";
 
 import module namespace search = "http://marklogic.com/appservices/search" at 
 "/MarkLogic/appservices/search/search.xqy";
 
-import module namespace domain = "http://www.xquerrail-framework.com/domain" at
+import module namespace domain = "http://xquerrail.com/domain" at
 "/_framework/domain.xqy";
 
-import module namespace config = "http://www.xquerrail-framework.com/config" at
+import module namespace config = "http://xquerrail.com/config" at
 "/_framework/config.xqy";
 
-import module namespace json = "http://www.xquerrail-framework.com/parsers/json" 
-    at "/_framework/lib/json.xqy";
-
-declare namespace as = "http://www.w3.org/2009/xpath-functions/analyze-string";
+declare namespace as = "http://www.w3.org/2005/xpath-functions";
 
 declare default collation "http://marklogic.com/collation/codepoint";
 
@@ -127,12 +124,12 @@ declare function model:build-uri($uri as xs:string,$model as element(domain:mode
   let $patterns := fn:analyze-string($uri,$token-pattern)
   return 
     fn:string-join(
-     for $p in $patterns/as:*
+     for $p in $patterns/*
      return 
      typeswitch($p)
         case element(as:non-match) return $p
         case element(as:match) return 
-            let $field-name := fn:data($p/as:group[@nr=1])
+            let $field-name := fn:data($p/*:group[@nr=1])
             let $field := $model//(domain:attribute|domain:element)[@name eq $field-name]
             let $data :=
                 if($instance instance of map:map) 
@@ -155,6 +152,7 @@ declare function model:build-uri($uri as xs:string,$model as element(domain:mode
         default return ""
     ,"")
 };
+
 (:~
  : Creates a series of collections based on the existing update
 ~:)
@@ -170,9 +168,11 @@ declare function build-collections($collections as xs:string*,$model as element(
 : @param - $doc - the doc
 : @return - the root as a node
 :)
-declare function model:get-root-node($doc as node()) 
+declare function model:get-root-node(
+    $domain-model as element(domain:model),
+    $doc as node()) 
 as node() {
-     xdmp:unpath(xdmp:path(($doc/node())))[1]
+   if($doc instance of document-node()) then $doc/* else $doc
 };
 
 (:~
@@ -235,7 +235,7 @@ declare function model:new(
   $domain-model as element(domain:model),
   $params as map:map
 ){
-   model:recursive-create($domain-model,$params)
+     model:recursive-create($domain-model,$params)
 };
 
 (:~
@@ -312,7 +312,7 @@ as element()?
       else   
         let $identity := model:generate-uuid()
         (: Validate the parameters before trying to build the document :)
-        let $validation :=  () (: model:validate($domain-model,$params) :)
+        let $validation :=  () (:model:validate($domain-model,$params):) 
         return
          if(fn:count($validation) > 0) 
          then fn:error(xs:QName("VALIDATION-ERROR"), fn:concat("The document trying to be created contains validation errors"), $validation)    
@@ -334,8 +334,12 @@ as element()?
                    let $root-namespace := domain:get-field-namespace($domain-model)
                    return (
                        if ($doc) then
-                            (: create the instance of the model in the document :)      
-                            xdmp:node-insert-child(model:get-root-node($doc),$update)
+                         let $root :=  model:get-root-node($domain-model,$doc)
+                         return 
+                           if($root) then 
+                              (: create the instance of the model in the document :)      
+                               xdmp:node-insert-child($root,$update)
+                           else fn:error(xs:QName("ROOT-MISSING"),"Missing Root Node",$doc) 
                        else (
                            xdmp:document-insert(
                              $path,
@@ -346,7 +350,6 @@ as element()?
                       ),
                       model:create-binary-dependencies($identity,$update)
                   )
-                  
                (: Creation for directory persistence :)
                else if ($persistence = 'directory') then
                     let $field-id := domain:get-field-value(domain:get-model-identity-field($domain-model),$update)
@@ -377,7 +380,7 @@ as element()?
                    return (
                        if ($doc) then
                             (: create the instance of the model in the document :)      
-                            xdmp:node-replace(model:get-root-node($doc),$update)
+                            xdmp:node-replace(model:get-root-node($domain-model,$doc),$update)
                        else
                            xdmp:document-insert(
                              $path,
@@ -462,7 +465,7 @@ declare function model:get(
         </stmt>))
     return (
         (: Execute statement :)
-        xdmp:log(("model:get::",xdmp:value($stmt)),"debug"),
+        xdmp:log(("model:get::",$stmt)),
         xdmp:value($stmt)
         )
 };
@@ -544,7 +547,7 @@ declare function model:update-partial(
    return 
      if($current) then
         let $build := model:recursive-build($domain-model,$current,$params,fn:true())
-        let $validation := () (: model:validate($domain-model,$params) :)
+        let $validation := ()(:model:validate($domain-model,$params) :)
         let $computed-collections := model:build-collections(($domain-model/domain:collection,map:get($params,"_collection")),$domain-model,$build)
         return
             if(fn:count($validation) > 0) then
@@ -593,10 +596,12 @@ declare function model:update(
     $collections as xs:string*,
     $partial as xs:boolean)
 {
+   let $params := domain:fire-before-event($domain-model,"update",$params) 
    let $current := model:get($domain-model,$params)
    let $id := $domain-model//(domain:container|domain:element|domain:attribute)[@identity eq "true"]/@name
    let $identity-field := $domain-model//(domain:element|domain:attribute)[@identity eq "true" or @type eq "identity"]
    let $identity := (domain:get-field-value($identity-field,$current))[1]
+   let $persistence := fn:data($domain-model/@persistence)
    return 
      if($current) then
         let $build := model:recursive-update($domain-model,$current,$params,$partial)
@@ -606,18 +611,22 @@ declare function model:update(
             if(fn:count($validation) > 0) then
                 fn:error(xs:QName("VALIDATION-ERROR"), fn:concat("The document trying to be updated contains validation errors"), $validation)    
             else (
-                xdmp:document-insert(
+               if($persistence = "document") then 
+                  xdmp:node-replace($current,$build)
+               else if($persistence = "directory") then 
+                  xdmp:document-insert(
                     xdmp:node-uri($current),
                     $build,
                     xdmp:document-get-permissions(xdmp:node-uri($current)),
                     fn:distinct-values(($collections,$computed-collections,xdmp:document-get-collections(xdmp:node-uri($current))))
-                ),
+                )
+             else fn:error(xs:QName("UPDATE-NOT-PERSISTABLE"),"Cannot Update Model with persistence: " || $persistence,$persistence),
                 model:create-binary-dependencies($identity,$current),
-                $build
+                domain:fire-after-event($domain-model,"update",$build)
             )
             (:Create delta map and save and logged:)
      else 
-       fn:error(xs:QName("ERROR"), "Trying to update a document that does not exist.")
+       fn:error(xs:QName("UPDATE-NOT-EXISTS"), "Trying to update a document that does not exist.")
 };
 declare function model:create-or-update($domain-model as element(domain:model),$params as map:map) {
    if(model:get($domain-model,$params)) then model:update($domain-model,$params)
@@ -881,13 +890,22 @@ declare function model:delete($domain-model as element(domain:model),$params as 
 as xs:boolean
 {
   let $current := model:get($domain-model,$params)
+  let $is-referenced := domain:is-model-referenced($domain-model,$current)
+  let $is-current := if($current) then () else fn:error(xs:QName("DELETE-ERROR"),"Could not find a matching document")
   return
     try {
+      if($is-referenced) then 
+        fn:error(
+            xs:QName("REFERENCE-CONSTRAINT-ERROR"),
+           "You are attempting to delete document which is referenced by other documents",
+           domain:get-model-reference-uris($domain-model,$current)
+        )
+      else 
        ( xdmp:node-delete($current)
         ,model:delete-binary-dependencies($domain-model,$current)
         ,fn:true() )
     } catch($ex) {
-       fn:false()  
+       xdmp:rethrow()  
     }
 };
 
@@ -902,11 +920,14 @@ declare function model:delete-binary-dependencies(
    for $field in $binary-fields
    let $value := domain:get-field-value($field,$current)
    return
+      if(fn:normalize-space($value) ne "" and fn:not(fn:empty($value)))
+      then 
       if(fn:doc-available($value)) then
         xdmp:document-delete($value)
       else (
          xdmp:log(fn:concat("DELETE-FILE-MISSING::field=",$field/@name," value=",$value),"log")
       )
+      else ()(:Binary not set so dont do anything:)
 };
  
 (:~
@@ -930,7 +951,7 @@ declare function model:lookup($domain-model as element(domain:model), $params as
     let $query := cts:and-query((
                  cts:element-query(fn:QName($nameSpace,$name),
                     if($qString ne "") 
-                    then cts:word-query(fn:concat($qString,"*"),("diacritic-insensitive", "wildcarded","case-insensitive","punctuation-insensitive"))
+                    then cts:word-query(fn:concat("*",$qString,"*"),("diacritic-insensitive", "wildcarded","case-insensitive","punctuation-insensitive"))
                     else cts:and-query(())
                  ),
                  if($domain-model/@persistence = "directory")
@@ -951,7 +972,7 @@ declare function model:lookup($domain-model as element(domain:model), $params as
             let $stmt :=  fn:string(<stmt>{fn:concat('fn:doc("', $loc/text() , '")', $xpath)}</stmt>)
             let $nodes := xdmp:value($stmt)
             let $lookup-values := 
-              for $node in $nodes
+              for $node in $nodes[cts:contains(.,$query)]
                let $key   := $node/(@*|*)[fn:local-name(.) = $key]/text()
                let $value := $node/(@*|*)[fn:local-name(.) = $label]/text()
                order by $value,$key
@@ -1043,10 +1064,12 @@ as element(list)?
         let $additional-query:= map:get($params,"_query")
         let $list  := 
             if ($persistence = 'document') then
-                let $path := $domain-model/domain:document/text() 
+                let $path := $domain-model/domain:document/text()
+                let $root := fn:data($domain-model/domain:document/@root)                
                 return
-                fn:doc($path)/*/*[cts:contains(.,cts:and-query((cts:document-query($path),$search,$additional-query)))]
-            else (:TODO Fixe to base query:)
+                  xdmp:value("fn:doc($path)/*:" || $root || "/*:"  || $name ||  "[cts:contains(.,cts:and-query(($search,$additional-query)))]")
+                  (:fn:doc($path)/*/*[cts:contains(.,cts:and-query(($search,$additional-query)))]:)
+            else 
                 let $dir := cts:directory-query($domain-model/domain:directory/text())
                 let $predicate := 
                     cts:element-query(fn:QName($namespace,$name),
@@ -1055,7 +1078,7 @@ as element(list)?
                             $search,
                             $dir
                             )
-                        ))
+                    ))
                 let $_ := xdmp:set($predicateExpr,$predicate)
                 return
                     cts:search(fn:collection(),$predicate)      
@@ -1064,34 +1087,35 @@ as element(list)?
             then fn:count($list)
             else xdmp:estimate(cts:search(fn:collection(),cts:element-query(fn:QName($namespace,$name),cts:and-query(($search,$predicateExpr))))) 
         let $sort := 
-            let $sort-field := map:get($params,"sidx")[1]
-            let $sort-order := map:get($params,"sord")[1]
-            let $model-sort-field := $domain-model/domain:navigation/@sortField/fn:data(.)
-            let $model-order := ($domain-model/domain:navigation/@sortOrder/fn:data(.),"ascending")[1]
-            let $domain-sort-field := $domain-model//(domain:element|domain:attribute)[@name = $sort-field]
+            let $sort-field        := map:get($params,"sidx")[1][. ne ""]
+            let $sort-order        := map:get($params,"sord")[1]
+            let $model-sort-field  := $domain-model/domain:navigation/@sortField/fn:data(.)
+            let $model-order       := ($domain-model/domain:navigation/@sortOrder/fn:data(.),"ascending")[1]
+            let $domain-sort-field := $domain-model//(domain:element|domain:attribute)[@name = ($sort-field,$model-sort-field)][1]
             let $domain-sort-as := 
               if($domain-sort-field) 
               then fn:concat("[1] cast as ", domain:resolve-datatype($domain-sort-field))
               else ()
+            let $domain-sort-order := 
+                if($sort-order) then $sort-order
+                else if($model-order) then $model-order
+                else ()
             return 
-            if($sort-field ne "" and fn:exists($sort-field)) 
-            then 
+            if($domain-sort-field) then 
                 if($sort-order = ("desc","descending"))
-                then fn:concat("($__context__//*:",$sort-field,")",$domain-sort-as,"? descending")
-                else fn:concat("($__context__//*:",$sort-field,")",$domain-sort-as,"? ascending")
+                then fn:concat("($__context__//*:",$domain-sort-field/@name,")",$domain-sort-as,"? descending")
+                else fn:concat("($__context__//*:",$domain-sort-field/@name,")",$domain-sort-as,"? ascending")
             else if($model-sort-field and $model-sort-field ne "") then 
                 (if($model-order = ("desc","descending"))
                 then fn:concat("($__context__//*:",$model-sort-field,")"," descending")
                 else fn:concat("($__context__//*:",$model-sort-field,")"," ascending")
                 )
             else ()            
-        let $page := 
-                xs:integer((map:get($params, 'pg'),1)[1])    
+        let $page     := xs:integer((map:get($params, 'page'),1)[1])    
         let $pageSize := xs:integer((map:get($params,'rows'),50)[1])
-        let $start := ($page - 1) * $pageSize + 1
-        let $last :=  $start + $pageSize - 1
-        let $end := if ($total > $last) then $last else $total
-        
+        let $start    := ($page - 1) * $pageSize + 1
+        let $last     :=  $start + $pageSize - 1
+        let $end      := if ($total > $last) then $last else $total
         let $resultsExpr := 
             if($sort ne "" and fn:exists($sort)) 
             then fn:concat("(for $__context__ in $list order by ",$sort, " return $__context__)[",$start, " to ",$end,"]")              
@@ -1105,15 +1129,19 @@ as element(list)?
                  model:filter-list-result($domain-model,$result/node())
             else  $results                 
         return 
-           <list type="{$name}">
+           <list type="{$name}" elapsed="{xdmp:elapsed-time()}">
              <currentpage>{$page}</currentpage>
              <pagesize>{$pageSize}</pagesize>
              <totalpages>{fn:ceiling($total div $pageSize)}</totalpages>
              <totalrecords>{$total}</totalrecords>
-             <searchString>{$search}</searchString>
-             <sortString>{$sort}</sortString>
-             <debugQuery>{xdmp:describe($predicateExpr,(),())}</debugQuery>
-             <debugQuery>{xdmp:pretty-print($resultsExpr)}</debugQuery>
+             {(:Add Additional Debug Arguments:)
+               if(map:get($params,"debug") = "true") then (
+                 <debugQuery>{xdmp:describe($predicateExpr,(),())}</debugQuery>,
+                 <searchString>{$search}</searchString>,
+                 <sortString>{$sort}</sortString>,
+                 <expr>{$resultsExpr}</expr>
+              ) else ()
+             }
              {$results}
            </list>
 }; 
@@ -1125,48 +1153,47 @@ declare function model:list-params(
     $domain-model as element(domain:model), 
     $params as map:map    
 ) {
-        if(map:get($params,"search") = "true")
-        then 
-          let $sf := map:get($params,"searchField"),
-              $so := map:get($params,"searchOper"),
-              $sv := map:get($params,"searchString"),
-              $filters := map:get($params,"filters")[1]
-          return
-            if(fn:exists($sf) and fn:exists($so) and fn:exists($sv) and
-               $sf ne "" and $so ne "")
-            then           
-                let $op := $so
+      let $sf := map:get($params,"searchField"),
+          $so := map:get($params,"searchOper"),
+          $sv := map:get($params,"searchString"),
+          $filters := map:get($params,"filters")[1]
+      return
+        if(fn:exists($sf) and fn:exists($so) and fn:exists($sv) and
+           $sf ne "" and $so ne "")
+        then           
+            let $op := $so
+            let $field-elem := $domain-model//(domain:element|domain:attribute)[@name eq $sf]
+            let $field := fn:QName(domain:get-field-namespace($field-elem),$field-elem/@name)
+            let $value := map:get($params,"searchString")[1]
+            return
+                operator-to-cts($field-elem,$op,$value)                
+       else if(fn:exists($filters[. ne ""])) then
+            let $parsed  := <x>{xdmp:from-json($filters)}</x>/*
+            let $_ := xdmp:log($parsed)
+            let $groupOp := ($parsed/json:entry[@key eq "groupOp"]/json:value,"AND")[1]
+            let $rules := 
+                for $rule in $parsed//json:entry[@key eq "rules"]/json:value/json:array/json:value/json:object
+    
+                let $op :=  $rule/json:entry[@key='op']/json:value
+                let $sf :=  $rule/json:entry[@key='field']/json:value
+                let $sv :=  $rule/json:entry[@key='data']/json:value
                 let $field-elem := $domain-model//(domain:element|domain:attribute)[@name eq $sf]
-                let $field := fn:QName(domain:get-field-namespace($field-elem),$field-elem/@name)
-                let $value := map:get($params,"searchString")[1]
+                let $field := 
+                    fn:QName(domain:get-field-namespace($field-elem),$field-elem/@name)
                 return
-                    operator-to-cts($field-elem,$op,$value)                
-           else if(fn:exists($filters)) then
-                let $parsed  := json:parse($filters)
-                let $groupOp := ($parsed/object/pair[@name eq "groupOp"],"AND")[1]
-                let $rules := 
-                    for $rule in $parsed//pair[@name eq "rules"]/object
-                    let $op :=  $rule/pair[@name='op']/text()
-                    let $sf :=  $rule/pair[@name='field']/text()
-                    let $sv :=  $rule/pair[@name='data']/text()
-                    let $field-elem := $domain-model//(domain:element|domain:attribute)[@name eq $sf]
-                    let $field := 
-                        fn:QName(domain:get-field-namespace($field-elem),$field-elem/@name)
-                    return
-                      if($op and $sf and $sv) then
-                      operator-to-cts($field-elem,$op, $sv)
-                      else ()
-                let $log := xdmp:log(("rules::", $rules),"debug")
-                return
-                   if($groupOp eq "OR") then
-                       cts:or-query((
-                          $rules
-                       ))
-                   else cts:and-query((
-                     $rules
+                  if($op and $sf and $sv) then
+                  operator-to-cts($field-elem,$op, $sv)
+                  else ()
+            let $log := xdmp:log(("rules::", $rules),"debug")
+            return
+               if($groupOp eq "OR") then
+                   cts:or-query((
+                      $rules
                    ))
-                else  ()                   
-        else ()
+               else cts:and-query((
+                 $rules
+               ))
+            else  ()                   
 };
 
 (:~
@@ -1281,92 +1308,132 @@ declare private function model:operator-to-cts(
               cts:not-query( cts:element-value-query($field,$value))
            else ()
 };
+declare function model:build-search-options(
+  $domain-model as element(domain:model)
+)  as element(search:options)
+{
+   model:build-search-options($domain-model,map:map())  
+};
+
 (:~
  : Build search options for a given domain model
  : @param $domain-model the model of the content type
  : @return search options for the given model
  :)
-declare function model:build-search-options($domain-model as element(domain:model))
-as element(search:options)
+declare function model:build-search-options(
+    $domain-model as element(domain:model),
+    $params as map:map  
+) as element(search:options)
 {
-
-let $properties := $domain-model//(domain:element|domain:attribute)[domain:navigation/@searchable = ('true')]
-let $modelNamespace :=  domain:get-field-namespace($domain-model)
-
-let $nav := $domain-model/domain:navigation
-let $constraints := 
-        for $prop in $properties
-        let $type := ($prop/domain:navigation/@search-type,"value")[1]
+    let $properties := $domain-model//(domain:element|domain:attribute)[domain:navigation/@searchable = ('true')]
+    let $modelNamespace :=  domain:get-field-namespace($domain-model)
+    let $baseOptions := $domain-model/search:options
+    let $nav := $domain-model/domain:navigation
+    let $constraints := 
+            for $prop in $properties[domain:navigation/@searchable = "true"]
+            let $type := ($prop/domain:navigation/@searchType,"value")[1]
+            let $facet-options := 
+                $prop/domain:navigation/search:facet-option
+            let $ns := domain:get-field-namespace($prop)
+            let $prop-nav := $prop/domain:navigation
+            return
+                <search:constraint name="{$prop/@name}" label="{$prop/@label}">{
+                  element { fn:QName("http://marklogic.com/appservices/search",$type) } {
+                        attribute collation {$COLLATION},
+                        if ($type eq 'range') 
+                        then attribute type { domain:resolve-ctstype($prop) }
+                        else attribute type {"xs:string"},
+                        if ($prop-nav/@facetable eq 'true') 
+                        then attribute facet { fn:true() }
+                        else  attribute facet { fn:false() },
+                        <search:element name="{$prop/@name}" ns="{$ns}" >{
+                            (
+                                if ($prop instance of attribute()) then
+                                  <search:attribute name="{$prop/@name}" ns="{$ns}"/> 
+                                else ()
+                            )
+                        }</search:element>,
+                        $facet-options
+                  }
+                }</search:constraint>
+      let $suggestOptions :=  
+        for $prop in $properties[domain:navigation/@suggestable = "true"]
+        let $type := ($prop/domain:navigation/@searchType,"value")[1]
+        let $facet-options := 
+        $prop/domain:navigation/search:facet-option
         let $ns := domain:get-field-namespace($prop)
+        let $prop-nav := $prop/domain:navigation
         return
-            <search:constraint name="{$prop/@name}">{
+            <search:constraint name="{$prop/@name}" label="{$prop/@label}">{
               element { fn:QName("http://marklogic.com/appservices/search",$type) } {
-                    attribute collation {$COLLATION}
-                    ,
-                    if ($type eq 'range') then
-                      attribute type { "xs:string" }
-                    else ()
-                    ,
+                    attribute collation {$COLLATION},
+                    if ($type eq 'range') 
+                    then attribute type { "xs:string" }
+                    else (),
                     <search:element name="{$prop/@name}" ns="{$ns}" >{
                         (
-                            if ($nav/@facetable = 'true') then
-                                 attribute facet { fn:true() }
-                            else ()
-                        ,
                             if ($prop instance of attribute()) then
                               <search:attribute name="{$prop/@name}" ns="{$ns}"/> 
                             else ()
                         )
-                    }</search:element>
+                    }</search:element>,
+                    $facet-options
               }
             }</search:constraint>
-            
-  let $sortOptions := 
-     for $prop in $properties
-     let $ns := domain:get-field-namespace($prop)
-     return
-        ( <search:state name="{$prop/@name}">
-             <search:sort-order direction="ascending" type="{$prop/@type}" collation="{$COLLATION}">
-              <search:element ns="{$ns}" name="{$prop/@name}"/>
-             </search:sort-order>
-             <search:sort-order>
-              <search:score/>
-             </search:sort-order>
-        </search:state>,
-        <search:state name="{$prop/@name}-descending">
-             <search:sort-order direction="descending" type="{$prop/@type}" collation="{$COLLATION}">
-              <search:element ns="{$ns}" name="{$prop/@name}"/>
-             </search:sort-order>
-             <search:sort-order>
-              <search:score/>
-             </search:sort-order>
-      </search:state>,
-      <search:state name="{$prop/@name}-ascending">
-             <search:sort-order direction="ascending" type="{$prop/@type}" collation="{$COLLATION}">
-              <search:element ns="{$ns}" name="{$prop/@name}"/>
-             </search:sort-order>
-             <search:sort-order>
-              <search:score/>
-             </search:sort-order>
-      </search:state>)
-        
-   let $persistence := fn:data($domain-model/@persistence)
-   let $addQuery := 
-        if ($persistence = ("document","singleton")) then 
-           cts:document-query($domain-model/domain:document/text())
-        else if($persistence = "directory") then
-            cts:directory-query($domain-model/domain:directory/text())
-        else ()
-        
-    let $options :=     
-        <search:options>
-            <search:return-query>{fn:true()}</search:return-query>
-            <search:return-facets>{fn:true()}</search:return-facets>
-            <search:additional-query>{$addQuery}</search:additional-query>
-            {$constraints}
-             <search:operator name="sort">{$sortOptions}</search:operator>
-         </search:options>
-    return $options
+      let $sortOptions := 
+         for $prop in $properties[domain:navigation/@sortable = "true"]
+         let $ns := domain:get-field-namespace($prop)
+         return
+            ( <search:state name="{$prop/@name}">
+                 <search:sort-order direction="ascending" type="{$prop/@type}" collation="{$COLLATION}">
+                  <search:element ns="{$ns}" name="{$prop/@name}"/>
+                 </search:sort-order>
+                 <search:sort-order>
+                  <search:score/>
+                 </search:sort-order>
+            </search:state>,
+            <search:state name="{$prop/@name}-descending">
+                 <search:sort-order direction="descending" type="{$prop/@type}" collation="{$COLLATION}">
+                  <search:element ns="{$ns}" name="{$prop/@name}"/>
+                 </search:sort-order>
+                 <search:sort-order>
+                  <search:score/>
+            </search:sort-order>
+          </search:state>)
+          
+       (:Implement a base query:)   
+       let $persistence := fn:data($domain-model/@persistence)
+       let $baseQuery := 
+            if ($persistence = ("document","singleton")) then 
+               cts:document-query($domain-model/domain:document/text())
+            else if($persistence = "directory") then
+                cts:directory-query($domain-model/domain:directory/text())
+            else ()
+       let $addQuery := cts:and-query((
+          $baseQuery,
+          map:get($params,"_query")
+          (:Need to allow to pass additional query through params:)
+       ))
+       let $options :=     
+            <search:options>
+                <search:return-query>{fn:true()}</search:return-query>
+                <search:return-facets>{fn:true()}</search:return-facets>
+                <search:additional-query>{$addQuery}</search:additional-query>
+                <search:suggestion-source>{
+                    $domain-model/search:options/search:suggestion-source/(@*|node()),
+                    $suggestOptions
+                }</search:suggestion-source>
+                {$constraints,
+                 $domain-model/search:options/search:constraint
+                }
+                <search:operator name="sort">{
+                   $sortOptions,
+                   $domain-model/search:options/search:operator[@name = "sort"]/*
+                }</search:operator>
+                {$baseOptions/search:operator[@name ne "sort"]}
+                {$baseOptions/*[. except $baseOptions/(search:constraint|search:operator|search:suggestion-source)]}
+             </search:options>
+        return $options
 };
 
 (:~
@@ -1378,18 +1445,42 @@ let $constraints :=
 declare function model:search($domain-model as element(domain:model), $params as map:map)  
 as element(search:response)
 {
-
-   let $query as xs:string? := map:get($params, "query")
+   let $query as xs:string* := map:get($params, "query")
    let $sort as xs:string?  := map:get($params, "sort")
    let $sort-order as xs:string? := map:get($params, "sort-order")
    let $page as xs:integer  := (map:get($params, "pg"),1)[1] cast as xs:integer
    let $pageLength as xs:integer  := (map:get($params, "ps"),20)[1] cast as xs:integer
-   let $start := (($page - 1) * $page) + 1
+   let $start := (($page - 1) * $pageLength) + 1
    let $end := ($page * $pageLength)
-   let $final := fn:concat($query," ",$sort)   
-   let $options := model:build-search-options($domain-model)
-   return
+   (:let $final := fn:concat($query," ",$sort)  :) 
+   let  $final := (if($query) then $query else "", $sort)
+   let $options := model:build-search-options($domain-model,$params)
+   let $results := 
      search:search($final,$options,$start,$pageLength)
+   return 
+     <search:response>
+     {attribute page {$page}}
+     {$results/(@*|node())}
+     {$options}
+     </search:response>
+};
+
+(:~
+ : Provide search:suggest interface for the model
+ : @param $domain-model the model of the content type
+ : @param $params the values to fill into the search
+ : @return search response element
+~:)
+declare function model:suggest($domain-model as element(domain:model), $params as map:map)  
+as xs:string*
+{
+   let $options := model:build-search-options($domain-model,$params)
+   let $query := map:get($params,"query")
+   let $limit := (map:get($params,"limit"),10)[1] cast as xs:integer
+   let $position := (map:get($params,"position"),1)[1] cast as xs:integer
+   let $focus := (map:get($params,"focus"),1)[1] cast as xs:integer
+   return
+       search:suggest($query,$options,$limit,$position,$focus)
 };
 
 (:~
@@ -1420,8 +1511,8 @@ declare function model:get-references($field as element(), $params as map:map) {
     let $name := fn:data($reference/@name)
     let $tokens := fn:tokenize($reference/@reference, ":")
     let $type := $tokens[2]
-    let $path := config:get-model-xqy-path($type)
-    let $ns := "http://www.xquerrail-framework.com/model/base"
+    let $path :=config:get-base-model-location($type)
+    let $ns := "http://xquerrail.com/model/base"
     let $funct := xdmp:function(fn:QName($ns,$tokens[3]),$path)
     return
         if(fn:function-available($tokens[3])) then
@@ -1534,9 +1625,30 @@ declare  function model:get-application-reference($field,$params){
 : @param $params the params to validate 
 : @return return a set of validation errors if any occur.
 ~:)
-declare function model:validate($domain-model as element(domain:model), $params as map:map)
+declare function model:validate($domain-model as element(domain:model), $params as map:map,$mode as xs:string)
 as element(validationError)*
 {
+   let $unique-constraints := domain:get-model-unique-constraint-fields($domain-model)
+   let $unique-search := domain:get-model-unique-constraint-query($domain-model,$params,$mode)
+   return
+      if($unique-search) then 
+        for $v in $unique-constraints
+        let $param-value := domain:get-field-param-value($v,$params)
+        return         
+        <validationError>
+            <type>Unique Constraint</type>
+            <error>Instance is not unique.Field:{fn:data($v/@name)} Value: {$param-value}</error>
+        </validationError>
+      else (),
+   let $uniqueKey-constraints := domain:get-model-uniqueKey-constraint-fields($domain-model)
+   let $uniqueKey-search := domain:get-model-uniqueKey-constraint-query($domain-model,$params,$mode)
+   return
+      if($uniqueKey-search) then  
+        <validationError>
+            <type>UniqueKey Constraint</type>
+            <error>Instance is not unique. Keys:{fn:string-join($uniqueKey-constraints/fn:data(@name),", ")}</error>
+        </validationError>
+      else (),      
    for $element in $domain-model/(domain:attribute | domain:element)
    let $name := fn:data($element/@name)
    let $key := domain:get-field-id($element)
@@ -1756,7 +1868,6 @@ declare function model:find($domain-model as element(domain:model),$params as ma
         else if($persistence = 'directory') then 
                 cts:search(fn:collection(),cts:element-query($model-qname, $search))       
         else fn:error(xs:QName("INVALID-PERSISTENCE"),"Invalid Persistence", $persistence)
-   let $_ := xdmp:log($search)
    return $found        
 };
 (:~
@@ -1776,8 +1887,8 @@ declare function find-params($model as element(domain:model),$params as map:map)
    let $queries := 
     for $k in map:keys($params)[fn:not(. = "_join")]
         let $parts    := fn:analyze-string($k, "^(\i\c*)(==|!=|>=|>|<=|<|\.\.|)?$")
-        let $opfield  := $parts/as:match/as:group[@nr eq 1]
-        let $operator := $parts/as:match/as:group[@nr eq 2]
+        let $opfield  := $parts/*:match/*:group[@nr eq 1]
+        let $operator := $parts/*:match/*:group[@nr eq 2]
         let $field    := domain:get-model-field($model,$opfield)
         let $stype    := ($field/domain:navigation/domain:searchType,"value")[1]
         let $ns       := domain:get-field-namespace($field)
@@ -1837,4 +1948,33 @@ declare function partial-update(
         return
             xdmp:node-replace($current-value,$build-node)
 };
-
+(:~
+ :  Finds particular nodes based on a model and updates the values
+~:)
+declare function model:find-and-update($model,$params) {
+   ()
+};
+(:~
+ : Collects the parameters 
+~:)
+(:
+declare function model:build-find-and-update-params(   
+    $model,
+    $params) {
+  let $final-map := map:map()
+  let $upd-map := map:map()
+  let $del-map := map:map()
+  let $ins-map := map:map()
+  let $col-map := map:map()
+  let $_ := 
+    for $k in map:keys($params) 
+    let $t := fn:tokenize($k,":")
+    return
+      switch($t[1])
+       (:Query:) case "q" return map:put($final-map,"query",$
+       (:Update:)case "u" return map:put($
+       (:Delete:)case "d" return 
+       (:Insert:)case "i" return
+       (:Collection:)case "c" return 
+  return $update-map 
+};:)

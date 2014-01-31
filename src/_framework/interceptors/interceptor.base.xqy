@@ -1,4 +1,4 @@
-module namespace interceptor = "http://www.xquerrail-framework.com/interceptor";
+module namespace interceptor = "http://xquerrail.com/interceptor";
 (:
  : Base interceptor all interceptors must register themselves with base.
  : Interceptors must be registered in the order in which they should be executed.
@@ -28,7 +28,7 @@ $scopes as xs:string*
    let $uris := fn:concat("/_framework/interceptors/interceptors.",$name,".xqy")
    let $func := 
        xdmp:function(
-          fn:QName("http://www.xquerrail-framework.com/interceptor",$name),
+          fn:QName("http://xquerrail.com/interceptor",$name),
           $uri
        )
    return (   

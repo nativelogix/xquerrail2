@@ -4,48 +4,50 @@ xquery version "1.0-ml";
  : This request controls all serialization of request map 
  : - All HTTP request elements in a single map:map type.
 ~:)
-module namespace request = "http://www.xquerrail-framework.com/request";
+module namespace request = "http://xquerrail.com/request";
 
-import module namespace json = "http://www.xquerrail-framework.com/parsers/json"  at "/_framework/lib/json.xqy";
 import module namespace mljson  = "http://marklogic.com/xdmp/json" at "/MarkLogic/json/json.xqy";
 
-import module namespace config = "http://www.xquerrail-framework.com/config" 
+import module namespace config = "http://xquerrail.com/config" 
   at "/_framework/config.xqy";
 
 declare option xdmp:mapping "false";
 
-declare variable $REQUEST-ID        := "request:request";
-declare variable $BODY              := "request:body";
-declare variable $BODY-XML          := "request:body-xml";
-declare variable $BODY-TEXT         := "request:body-text";
-declare variable $BODY-BINARY       := "request:body-binary";
-declare variable $METHOD            := "request:method";
-declare variable $CONTENT-TYPE      := "request:content-type";
-declare variable $BODY-TYPE         := "request:body-type";
-declare variable $PROTOCOL          := "request:protocol";
-declare variable $USERNAME          := "request:username";
-declare variable $USERID            := "request:userid";
-declare variable $PATH              := "request:path";
-declare variable $URL               := "request:url";
-declare variable $ORIGIN            := "request:origin";
-declare variable $CONTEXT           := "request:context";
-declare variable $APPLICATION       := "request:application";
-declare variable $CONTROLLER        := "request:controller";
-declare variable $ACTION            := "request:action";
-declare variable $FORMAT            := "request:format";
-declare variable $ROUTE             := "request:route";
-declare variable $VIEW              := "request:view";
-declare variable $PARTIAL           := "request:partial";
-declare variable $REDIRECT          := "request:redirect";
-declare variable $REDIRECT-CODE     := "request:redirect-code";
-declare variable $FILTERS           := "filters";
-declare variable $DEBUG             := "request:debug";
-declare variable $COLLECTION        := "request:collection";
-declare variable $HEADER-PREFIX     := "request:header::";
-declare variable $PARAM-PREFIX      := "request:param::";
-declare variable $PARAM-CONTENT-TYPE-PREFIX := "request:field-content-type::";
-declare variable $PARAM-FILENAME-PREFIX   := "request:field-filename::";
-declare variable $SYS-PARAMS := ("_application","_controller","_action","_view","_context","_format","_url","_route","_partial","_debug");
+declare private variable $REQUEST-ID        := "request:request";
+declare private variable $BODY              := "request:body";
+declare private variable $BODY-XML          := "request:body-xml";
+declare private variable $BODY-TEXT         := "request:body-text";
+declare private variable $BODY-BINARY       := "request:body-binary";
+declare private variable $METHOD            := "request:method";
+declare private variable $CONTENT-TYPE      := "request:content-type";
+declare private variable $BODY-TYPE         := "request:body-type";
+declare private variable $PROTOCOL          := "request:protocol";
+declare private variable $USERNAME          := "request:username";
+declare private variable $USERID            := "request:userid";
+declare private variable $PATH              := "request:path";
+declare private variable $URL               := "request:url";
+declare private variable $ORIGIN            := "request:origin";
+declare private variable $CONTEXT           := "request:context";
+declare private variable $APPLICATION       := "request:application";
+declare private variable $CONTROLLER        := "request:controller";
+declare private variable $ACTION            := "request:action";
+declare private variable $FORMAT            := "request:format";
+declare private variable $ROUTE             := "request:route";
+declare private variable $VIEW              := "request:view";
+declare private variable $PARTIAL           := "request:partial";
+declare private variable $REDIRECT          := "request:redirect";
+declare private variable $REDIRECT-CODE     := "request:redirect-code";
+declare private variable $FILTERS           := "filters";
+declare private variable $DEBUG             := "request:debug";
+declare private variable $COLLECTION        := "request:collection";
+declare private variable $HEADER-PREFIX     := "request:header::";
+declare private variable $PARAM-PREFIX      := "request:param::";
+declare private variable $PARAM-CONTENT-TYPE-PREFIX := "request:field-content-type::";
+declare private variable $PARAM-FILENAME-PREFIX   := "request:field-filename::";
+declare private variable $ERROR             := "request:error";
+declare private variable $ERROR-CODE        := "request:error-code";
+declare private variable $ERROR-MESSAGE     := "request:error-message";
+declare private variable $SYS-PARAMS := ("_application","_controller","_action","_view","_context","_format","_url","_route","_partial","_debug");
 
 (:~Global Request Variable ~:)
 declare private variable $request as map:map := 
@@ -56,7 +58,7 @@ declare private variable $request as map:map :=
  );
 
 (:~
- : Decodes a binary request into s string
+ : Decodes a binary request into string
 ~:)
 declare function request:hex-decode($hexBin as xs:hexBinary) as xs:string {
     request:hex-decode($hexBin, fn:floor(fn:string-length(fn:string($hexBin)) div 2))
@@ -139,7 +141,7 @@ declare function request:parse($parameters) as map:map {
         map:put($request, $URL,        xdmp:get-request-url()),
         map:put($request, $PROTOCOL,   xdmp:get-request-protocol()),
         map:put($request, $USERNAME,   xdmp:get-request-username()),
-        map:put($request, $USERID,     xdmp:get-request-user())
+        map:put($request, $USERID,     xs:unsignedLong(xdmp:get-request-user()))
       )
    let $fields := 
          for $i in xdmp:get-request-field-names()[fn:not(. = $SYS-PARAMS)]
@@ -154,7 +156,7 @@ declare function request:parse($parameters) as map:map {
                  if($j castable as xs:string and fn:not($j instance of binary()))
                  then
                     if(fn:contains($j,"\{|\}")) then
-                    let $json:= json:parse(fn:normalize-space($j))
+                    let $json:= xdmp:from-json(fn:normalize-space($j))
                     return
                          if($json instance of element(json)) 
                          then $json
@@ -392,6 +394,7 @@ declare function request:param-as(
       then $value
       else fn:error(xs:QName("PARAM-EXCEPTION"),"Parameter Type is not supported",($type,$name))
 };
+
 (:~
  :  Returns the parameters of the request as a map
 ~:)
@@ -420,7 +423,7 @@ declare function request:param-filename($name as xs:string) {
  :  you can extract the type based request from client
 ~:)
 declare function request:param-content-type(
-$field as xs:string
+    $field as xs:string
 )
 {
    map:get($request,fn:concat($PARAM-CONTENT-TYPE-PREFIX,$field))
@@ -575,6 +578,7 @@ declare private function request:convert-json-map($map as map:map) {
             if($val instance of map:map) then request:convert-json-map($val) else $val
         }
 };
+
 (:~
  :  Using JQGrid you can parse a query from field using simple language, parses from JSON into CTS Query
 ~:)
@@ -628,7 +632,7 @@ declare function request:parse-query()
  let $filters  := 
   if(request:param("_search", "false") = "true") 
   then if(request:param("filters",())) 
-       then json:parse(request:param($request,"filters"))
+       then xdmp:from-json(request:param($request,"filters"))
        else 
         <item>
            <field>{request:param($request,"searchField")}</field>
@@ -647,12 +651,14 @@ declare function request:set-redirect($uri)
 {
    map:put($request,$REDIRECT,fn:data($uri))
 };
+
 (:~
  : Redirects the request and sends the redirect response code
 ~:)
 declare function request:set-redirect(
     $uri as xs:string,
-    $redirect-code as xs:string
+    $redirect-code as xs:integer,
+    $message as xs:string
 ) {
     (
         request:set-redirect($uri),
@@ -660,16 +666,24 @@ declare function request:set-redirect(
     )
 };
 
+(:~
+ : Gets the redirect URL from the request
+ :)
 declare function request:redirect()  as xs:string?
 {
   map:get($request,$REDIRECT)
 };
 
-declare function request:redirect-code()  as xs:string?
+(:~
+ : Get the redirect code for a given request.  
+ :)
+declare function request:redirect-code()  as xs:integer?
 {
   map:get($request,$REDIRECT-CODE)
 };
-
+(:~
+ : Adds a request parameter
+ :)
 declare function request:add-param(
   $name,
   $value as item()*
@@ -677,6 +691,9 @@ declare function request:add-param(
      map:put($request,fn:concat($PARAM-PREFIX,$name),$value)
 };
 
+(:~
+ : Adds a request parameter from a map:map
+~:)
 declare function request:add-params(
   $params as map:map
 ) as empty-sequence() {
@@ -685,7 +702,9 @@ declare function request:add-params(
      map:put($request,fn:concat($PARAM-PREFIX,$k),map:get($params,$k))
 };
 
-
+(:~
+ : Serializes the request to an xml element definition
+ :)
 declare function request:serialize() 
 {
     element {"request"} {
@@ -694,7 +713,35 @@ declare function request:serialize()
     }    
 };
 
+(:~
+ : Removes a parameter from the request
+ : @param name  Parameter Key to remove.
+ :)
 declare function request:remove-param($name as xs:string)
 {
     map:delete($request:request, fn:concat($PARAM-PREFIX,$name))
+};
+
+(:Create An Error Handler:)
+declare function request:set-error(
+  $code as xs:integer,
+  $message as xs:string
+) {
+   map:put($request,$ERROR,fn:true()),
+   map:put($request,$ERROR-CODE,$code),
+   map:put($request,$ERROR-MESSAGE,$message)
+   
+};
+(:~
+ :  Returns if an error was thrown
+~:)
+declare function request:error() as xs:boolean {
+  map:get($request,$ERROR) = fn:true()
+};
+
+declare function request:error-code() as xs:integer? {
+   map:get($request,$ERROR-CODE)
+};
+declare function request:error-message()  as xs:string {
+  map:get($request,$ERROR-MESSAGE)
 };

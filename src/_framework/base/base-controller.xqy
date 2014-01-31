@@ -6,22 +6,22 @@ xquery version "1.0-ml";
  : @version  : 1.0  
 ~:)
 
-module namespace controller = "http://www.xquerrail-framework.com/controller/base";
+module namespace controller = "http://xquerrail.com/controller/base";
 
 (:Global Import Module:)
-import module namespace request =  "http://www.xquerrail-framework.com/request"
+import module namespace request =  "http://xquerrail.com/request"
    at "/_framework/request.xqy";
    
-import module namespace response = "http://www.xquerrail-framework.com/response"
+import module namespace response = "http://xquerrail.com/response"
    at "/_framework/response.xqy";   
 
-import module namespace model = "http://www.xquerrail-framework.com/model/base"
+import module namespace model = "http://xquerrail.com/model/base"
    at "/_framework/base/base-model.xqy";
 
-import module namespace domain = "http://www.xquerrail-framework.com/domain"
+import module namespace domain = "http://xquerrail.com/domain"
    at "/_framework/domain.xqy";
 
-import module namespace config = "http://www.xquerrail-framework.com/config"
+import module namespace config = "http://xquerrail.com/config"
    at "/_framework/config.xqy";
    
 declare default collation "http://marklogic.com/collation/codepoint";
@@ -50,7 +50,15 @@ declare function controller:model()
      if($model) then $model
      else fn:error(xs:QName("INVALID-MODEL"),"Invalid Model for application",(request:application(),request:controller()))
 };
-
+declare function controller:schema() {
+  (
+    response:set-model(controller:model()),
+    response:set-body(controller:model()),
+    response:set-view("model"),
+    response:set-action("model"),
+    response:flush()
+  )
+};
 declare function controller:controller()
 {
     domain:get-controller(request:application(),request:controller())
@@ -70,6 +78,7 @@ declare function controller:invoke($action)
        else if($action eq "search") then controller:search()
        else if($action eq "put")    then controller:put()
        else if($action eq "post")   then controller:post()
+       else if($action eq "binary") then controller:binary()
        (:HTML:)   
        else if($action eq "index")  then controller:index()
        else if($action eq "new")    then controller:new()
@@ -82,6 +91,7 @@ declare function controller:invoke($action)
        else if($action eq "fields") then controller:fields()
        else if($action eq "export") then controller:export()
        else if($action eq "import") then controller:import()
+       else if($action eq "suggest") then controller:suggest()
        else controller:main()   
    else fn:error(xs:QName("CONTROLLER-NOT-EXISTS"),"Controller does not exist",request:controller())
  )
@@ -107,9 +117,9 @@ declare function controller:main()
 };
 
   declare function controller:info() { 
-  <info xmlns:domain="http://www.xquerrail-framework.com/domain"
+  <info xmlns:domain="http://xquerrail.com/domain"
       xmlns:search="http://marklogic.com/appservices/search"
-      xmlns:builder="http://www.xquerrail-framework.com/builder">
+      xmlns:builder="http://xquerrail.com/builder">
    
    <action name="create" method="PUT">
     {()}   
@@ -172,7 +182,7 @@ declare function controller:update()
     controller:model(),
     request:params(),
     (),
-    fn:true()
+    request:param("partial-update") = "true" 
   )
 };
  
@@ -202,6 +212,17 @@ declare function controller:search()
    response:set-body(model:search(controller:model(),request:params())),
    response:set-data("search-options",model:build-search-options(controller:model())),
    response:flush()
+)};
+(:~
+ : Provide search suggestions for contentType
+~:)
+declare function controller:suggest()
+{(
+  let $suggestions :=  model:suggest(controller:model(),request:params())
+  return
+    <s>
+    { for $suggestion in $suggestions return <t>{$suggestion}</t>}
+    </s>
 )};
 
 
@@ -312,12 +333,14 @@ declare function controller:edit()
 
 declare function controller:remove()
 {
-  let $delete := 
-        try { 
+  let $delete := controller:delete()
+
+   (:     try { 
            controller:delete( )
         } catch($exception) {
           response:set-error("404",$exception) 
         }
+   :)
   return
   if(response:has-error()) then (
      response:set-flash("error_message","Could not Delete"),
@@ -373,3 +396,21 @@ declare function controller:export() {
     response:set-view("export"),  
     response:flush()
 };
+
+declare function controller:binary() {
+  let $current := model:get(controller:model(),request:params())
+  let $field   := controller:model()//domain:element[@name = request:param("name") ]
+  let $binaryref := domain:get-field-value($field,$current)
+  return  (
+     response:is-download(fn:true()),
+     response:set-content-type($binaryref/@content-type),
+     response:add-response-header("content-disposition",fn:concat("attachment; filename=", xdmp:url-encode(($binaryref/@filename/fn:data(.),request:param("name"))[1]) )),
+     response:set-body(fn:doc($binaryref)),
+     response:flush()
+  )
+};
+(:
+declare function controller:findAndModify() {
+   model:findAndModify(request:params())
+};
+:)

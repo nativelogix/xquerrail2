@@ -1,21 +1,21 @@
 xquery version "1.0-ml";
 
-module namespace base = "http://www.xquerrail-framework.com/engine";
+module namespace base = "http://xquerrail.com/engine";
     
-import module namespace engine  = "http://www.xquerrail-framework.com/engine"
+import module namespace engine  = "http://xquerrail.com/engine"
   at "/_framework/engines/engine.base.xqy";
   
-import module namespace config = "http://www.xquerrail-framework.com/config"
+import module namespace config = "http://xquerrail.com/config"
   at "/_framework/config.xqy";
 
-import module namespace request = "http://www.xquerrail-framework.com/request"
+import module namespace request = "http://xquerrail.com/request"
    at "/_framework/request.xqy";
    
-import module namespace response = "http://www.xquerrail-framework.com/response"
+import module namespace response = "http://xquerrail.com/response"
    at "/_framework/response.xqy";
    
 
-declare namespace tag = "http://www.xquerrail-framework.com/tag";  
+declare namespace tag = "http://xquerrail.com/tag";  
 
 declare default function namespace "http://www.w3.org/2005/xpath-functions";
 
@@ -34,13 +34,11 @@ declare variable $context := map:map();
 ~:)
 declare variable $custom-engine-tags as xs:QName*:= 
 (
-  fn:QName("engine","x-json")
+  fn:QName("engine","to-xml")
 );
 (:Set your engines custom transformer:)
-declare variable $custom-transform-function := 
-   xdmp:function(
-     xs:QName("engine:custom-transform"),
-     "/_framework/engines/engine.json.xqy"
+declare variable $custom-transform-function := (
+   xdmp:function(xs:QName("engine:custom-transform"),"/_framework/engines/engine.json.xqy")
 );
 (:~
  : The Main Controller will call your initialize method
@@ -60,16 +58,7 @@ declare function engine:initialize($_response,$_request){
    engine:render()
 )
 };
-(:~
- : No need to use the views 
-~:)
-declare function engine:internal-render-view()
-{
-   xdmp:invoke(
-     fn:concat("/",response:application(),"/views/", response:controller(),"/",response:controller(), ".", response:view(),".xml.xqy"),
-     (xs:QName("response"),response:response())
-   )
-};
+
 
 declare function engine:render-xml()
 {   
@@ -101,7 +90,10 @@ declare function engine:render()
      if(response:content-type())
      then xdmp:set-response-content-type(response:content-type())
      else xdmp:set-response-content-type("text/xml"),
-     if(response:view()) then engine:internal-render-view() else  engine:render-xml()
+     let $view := response:view()
+     let $exists := engine:view-exists($view)
+     return
+     if($exists) then engine:render-view() else  engine:render-xml()
    )
 };
 

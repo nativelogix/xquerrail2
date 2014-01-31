@@ -1,11 +1,11 @@
 xquery version "1.0-ml";
 
-module namespace database = "http://www.xquerrail-framework.com/database";
+module namespace database = "http://xquerrail.com/database";
 
-import module namespace config = "http://www.xquerrail-framework.com/config"
+import module namespace config = "http://xquerrail.com/config"
     at "/_framework/config.xqy";
  
-import module namespace domain = "http://www.xquerrail-framework.com/domain"
+import module namespace domain = "http://xquerrail.com/domain"
     at "/_framework/domain.xqy";
     
 import module namespace admin = "http://marklogic.com/xdmp/admin" 
@@ -37,7 +37,9 @@ declare function initialize($application-name as xs:string,$environment as xs:st
    return 
       build-indexes($field-index-map)   
 };
-
+(:~
+ : 
+~:)
 declare function assign-field-index($map as map:map,$field as element()) {
     let $index-type := fn:string($field/@type)
     let $index := 
@@ -77,7 +79,7 @@ declare function database:resolve-systype($field)
      case element(modify-user) return "string"
      case element(binary) return ()
      case element(schema-element) return ()
-     case element(query) return ()
+     case element(query) return "cts:query"
      case element(point) return "point"
      case element(string) return "string"
      case element(integer) return "int"
@@ -96,6 +98,7 @@ declare function database:resolve-systype($field)
      case element(reference) return "element-attribute-value"
      default return fn:error(xs:QName("UNRESOLVED-DATATYPE"),$field)
 };
+
 declare function database:resolve-index-type($field)
 {
    if($field instance of domain:attribute) 
@@ -108,8 +111,9 @@ declare function database:resolve-index-type($field)
          
       else ()
 };
+
 declare function  build-index-script($map as map:map) {
-   
+  ()   
 };
 
 declare function apply-configuration($configuration) {

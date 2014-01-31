@@ -1,27 +1,24 @@
 xquery version "1.0-ml";
 
-module namespace form = "http://www.xquerrail-framework.com/helper/form";
+module namespace form = "http://xquerrail.com/helper/form";
 
 declare default element namespace "http://www.w3.org/1999/xhtml";
 
 (:
-import module namespace request = "http://www.xquerrail-framework.com/request"
+import module namespace request = "http://xquerrail.com/request"
 at "/_framework/request.xqy";
 :)
 
-import module namespace domain = "http://www.xquerrail-framework.com/domain" 
+import module namespace domain = "http://xquerrail.com/domain" 
 at "/_framework/domain.xqy";
 
-import module namespace json = "http://marklogic.com/json" 
-at "/_framework/lib/mljson.xqy";
-
-import module namespace js    = "http://www.xquerrail-framework.com/helper/javascript"
+import module namespace js    = "http://xquerrail.com/helper/javascript"
 at "/_framework/helpers/javascript-helper.xqy";
 
-import module namespace response = "http://www.xquerrail-framework.com/response"
+import module namespace response = "http://xquerrail.com/response"
 at "/_framework/response.xqy";
 
-import module namespace base = "http://www.xquerrail-framework.com/model/base"
+import module namespace base = "http://xquerrail.com/model/base"
   at "/_framework/base/base-model.xqy";
 
 declare option xdmp:output "indent=yes";
@@ -43,7 +40,9 @@ declare function form:size($size as xs:string) {
 declare function form:mode($mode as xs:string) {
   xdmp:set($FORM-MODE,$mode)
 };
-
+(:~
+ : 
+~:)
 declare function form:get-field-name($field as node()) {
     domain:get-field-id($field)  
 };
@@ -103,20 +102,20 @@ declare function form:build-form-field(
        if ($repeater and $value) then 
             for $v in $value
             return
-             (form:render-control($field,$v),$repeater) 
+             (form:control($field,$v),$repeater) 
        else
-             (form:render-control($field,$value),$repeater)
+             (form:control($field,$value),$repeater)
      case element(domain:attribute) return
        if ($repeater and $value) then 
             for $v in $value
             return
-            <div class="control-group type_{$type}">{ (form:render-control($field,$v),$repeater) }</div>
+            <div class="control-group type_{$type}">{ (form:control($field,$v),$repeater) }</div>
        else
-            <div class="control-group type_{$type}">{ (form:render-control($field,$value),$repeater) }</div>
+            <div class="control-group type_{$type}">{ (form:control($field,$value),$repeater) }</div>
      default return ()
 };
 
-declare function form:render-control($field,$value)
+declare function form:control($field,$value)
 {
   let $type := (fn:data($field/domain:ui/@type),fn:data($field/@type))[1]
   let $qtype := element {fn:QName("http://www.w3.org/1999/xhtml",$type)} { $type }
@@ -124,62 +123,66 @@ declare function form:render-control($field,$value)
     typeswitch($qtype)
 
      (: Complex Element :)
-      case element(schema-element) return form:render-complex($field,$value)
-      case element(html-editor) return form:render-complex($field,$value)
-      case element(textarea) return form:render-complex($field,$value)
-      case element(reference) return form:render-reference($field,$value)
+      case element(schema-element) return form:complex($field,$value)
+      case element(html-editor) return form:complex($field,$value)
+      case element(textarea) return form:complex($field,$value)
+      case element(reference) return form:reference($field,$value)
       case element(grid) return form:build-child-grid($field,$value)
 
       (:Text Elements:)
-      case element(identity) return render-hidden($field,$value)
-      case element(string) return render-text($field,$value)
-      case element(text) return render-text($field,$value)
-      case element(integer) return render-text($field,$value)
-      case element(long) return render-text($field,$value)
-      case element(decimal) return render-text($field,$value)
-      case element(float) return render-text($field,$value)
-      case element(anyURI) return render-text($field,$value)
-      case element(yearMonth) return render-text($field,$value)
-      case element(monthDay) return render-text($field,$value)
+      case element(identity) return form:hidden($field,$value)
+      case element(string) return form:text($field,$value)
+      case element(text) return form:text($field,$value)
+      case element(integer) return form:text($field,$value)
+      case element(long) return form:text($field,$value)
+      case element(decimal) return form:text($field,$value)
+      case element(float) return form:text($field,$value)
+      case element(anyURI) return form:text($field,$value)
+      case element(yearMonth) return form:text($field,$value)
+      case element(monthDay) return form:text($field,$value)
       
-      case element(boolean) return render-checkbox($field,$value)
-      case element(password) return form:render-password($field,$value)
-      case element(email) return form:render-email($field,$value)
+      case element(boolean) return checkbox($field,$value)
+      case element(password) return form:password($field,$value)
+      case element(email) return form:email($field,$value)
       
       (:Choice Elements:)
-      case element(list) return form:render-choice($field,$value)
-      case element(radiolist) return form:render-list($field,$value)
-      case element(checkboxlist) return form:render-list($field,$value)
-      case element(choice) return form:render-choice($field,$value)
-      case element(entity) return form:render-entity($field,$value)
-      case element(country) return form:render-country($field,$value)
-      case element(locale) return form:render-locale($field,$value)
+      case element(list) return form:choice($field,$value)
+      case element(radiolist) return form:list($field,$value)
+      case element(checkboxlist) return form:list($field,$value)
+      case element(choice) return form:choice($field,$value)
+      case element(entity) return form:entity($field,$value)
+      case element(country) return form:country($field,$value)
+      case element(locale) return form:locale($field,$value)
       
       (:Date Time Controls:)
-      case element(date) return form:render-date($field,$value)
-      case element(dateTime) return form:render-dateTime($field,$value)
-      case element(time) return form:render-time($field,$value)
+      case element(date) return 
+          if ($field/domain:navigation/@editable eq 'false') then
+              form:text($field, $value)
+          else 
+              form:date($field,$value)
+      case element(dateTime) return form:dateTime($field,$value)
+      case element(time) return form:time($field,$value)
      
       (:Repeating Controls:)
-      case element(collection) return form:render-collection($field,$value)
-      case element(repeated) return form:render-repeated($field,$value)
+      case element(collection) return form:collection($field,$value)
+      case element(repeated) return form:repeated($field,$value)
       
       (:Button Controls:)
-      case element(hidden) return form:render-hidden($field,$value)
+      case element(hidden) return form:hidden($field,$value)
       
-      case element(button) return form:render-button($field,$value)
-      case element(submit) return form:render-submit($field,$value)
-      case element(clear) return form:render-clear($field,$value)
+      case element(button) return form:button($field,$value)
+      case element(submit) return form:submit($field,$value)
+      case element(clear) return form:clear($field,$value)
       
       (:Other Controls:)
-      case element(referenceLookup) return form:render-lookup($field,$value)
-      case element(csrf) return form:render-csrf($field,$value)
-      case element(binary) return form:render-binary($field,$value)
-      case element(file) return form:render-binary($field,$value)
-      case element(fileupload) return form:render-binary($field,$value)
+      case element(lookup) return form:lookup($field,$value)
+      case element(csrf) return form:csrf($field,$value)
+      case element(binary) return form:binary($field,$value)
+      case element(file) return form:binary($field,$value)
+      case element(fileupload) return form:binary($field,$value)
 
      (:Custom Rendering:)
-      case element() return form:render-custom($field,$value)
+      case element() return form:custom($field,$value)
       
       default return <div class="error">No Render for field type {$type}.</div>
 };
@@ -193,7 +196,7 @@ declare function form:get-value-from-response($field as element()) {
     (: Verify you only pull the approprite node just incase the body is a sequence :)
     let $node := response:body()//*[fn:local-name(.) = $name]
     let $_ := xdmp:log(("field:node::",$node),"debug")
-    let $value := 
+    return
         if($field/@type = ("reference","binary")) 
         then $node
         else if($field/@type = "schema-element") then 
@@ -202,8 +205,6 @@ declare function form:get-value-from-response($field as element()) {
             if($node) 
             then fn:data($node)
             else fn:data($field/@default)
-    return 
-        $value
 };
 
 declare function form:get-value-by-name-from-response($name as xs:string) {
@@ -212,7 +213,7 @@ declare function form:get-value-by-name-from-response($name as xs:string) {
         $value
 };
 
-declare function form:render-before($field)
+declare function form:before($field)
 {
   if($field/@label and fn:not($field/domain:ui/@type = "hidden")) 
   then 
@@ -222,7 +223,7 @@ declare function form:render-before($field)
   else ()
 };
 
-declare function form:render-after($field)
+declare function form:after($field)
 {
     let $type := ($field/domain:ui/@type,$field/@type)[1]
     let $id   := domain:get-field-id($field)
@@ -234,7 +235,7 @@ declare function form:render-after($field)
        default return ()
 };
 
-declare function form:render-attributes($field)
+declare function form:attributes($field)
 {(
     if(($field/domain:navigation/@editable = 'false' and $FORM-MODE = "edit")
         or ($field/domain:navigation/@newable = 'false' and $FORM-MODE = "new")
@@ -245,7 +246,7 @@ declare function form:render-attributes($field)
         attribute multiple {"multiple"}
     else (),
     if($field/@type eq "boolean")
-    then attribute class {"field"}
+    then attribute class {"field checkbox"}
     else if($field/@type eq "schema-element" or $field/domain:ui/@type = "textarea")
          then  attribute class {("field", "textarea",$FORM-SIZE-CLASS,$field/@name,$field/domain:ui/@type)}
     else attribute class {("field",$FORM-SIZE-CLASS,$field/@type,$field/@name,$field/domain:ui/@class/fn:tokenize(.,"\s"))},
@@ -260,7 +261,7 @@ declare function form:render-attributes($field)
     )
 )};
 
-declare function form:render-validation($field) {
+declare function form:validation($field) {
     let $constraint  := $field/domain:constraint
     return (
         if($constraint/@required = "true")                then attribute required  {$constraint/@required eq "true"}    else (),
@@ -271,7 +272,7 @@ declare function form:render-validation($field) {
     )
 };
 
-declare function form:render-values($field,$value)
+declare function form:values($field,$value)
 {
  let $list  := (
         $field/ancestor::domain:model/domain:optionlist[@name = $field/domain:constraint/@inList],
@@ -279,9 +280,10 @@ declare function form:render-values($field,$value)
  )[1]
  let $is-multi := $field/@occurrence  = ("+","*")
  let $default  := $field/@default
- let $value    := if($value) then $value else $default
+ let $value    := if($value[. ne ""]) then $value else $default
+ let $readonly := $field/domain:navigation/@editable eq 'false'
  return 
- if($list) then
+ if($list and fn:not($readonly)) then
     for $option in $list/domain:option
     return
         <option value="{$option/text()}">
@@ -298,7 +300,7 @@ declare function form:render-values($field,$value)
             if(xs:boolean($value) eq fn:true()) 
             then attribute checked {"checked"}
             else ()
-    ) else  attribute value {$value}
+    ) else  attribute value {fn:string-join($value,",")}
 };
 
 (:~
@@ -307,7 +309,7 @@ declare function form:render-values($field,$value)
  :   (application):(helper|model|tag):function-name($field,$value)
  :   The method should take a field and value
 ~:)
-declare function form:render-custom($field,$value)
+declare function form:custom($field,$value)
 {
   let $renderer := $field/domain:ui/@renderer
   let $context := fn:tokenize($renderer,":")
@@ -322,30 +324,39 @@ declare function form:render-custom($field,$value)
  : Function binds controls to their respective request data 
  : from the request map;
 ~:)
-declare function form:render-text($field,$value)
+declare function form:text($field,$value)
 {
   <div class="control-group">{
-       form:render-before($field),
+       form:before($field),
        <div class="controls">{       
-            if($field/domain:constraint/@inList) then
+            if($field/domain:constraint/@inList and fn:not($field/domain:navigation/@editable eq 'false')) then
             <select id="{form:get-field-name($field)}" name="{form:get-field-name($field)}">
-            {form:render-attributes($field)}
-            {form:render-values($field,$value)}
+            {form:attributes($field)}
+            {form:values($field,$value)}
             </select>
             else 
-            <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text">
-            {form:render-attributes($field)}
-            {form:render-values($field,$value)}
-            </input>
+            if($field/@occurrence = ("*","+"))
+            then 
+                for $val at $pos in ($value, if($value) then () else "")
+                return
+                  <input id="{form:get-field-name($field)}[{$pos - 1}]" name="{form:get-field-name($field)}" type="text">
+                  {form:attributes($field)}
+                  {form:values($field,$val)}
+                  </input>
+             else 
+                  <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text">
+                  {form:attributes($field)}
+                  {form:values($field,$value)}
+                  </input>
        }</div>
        ,
-       form:render-after($field)
+       form:after($field)
   }</div>
 };
 (:~
  : Renders a list of radio boxes 
 ~:)
-declare function form:render-list($field,$value) {
+declare function form:list($field,$value) {
     let $type as xs:string := ($field/domain:ui/@type,$field/@type)[1]
     let $ui-type := 
         if($type = ("radio","radiolist")) 
@@ -354,7 +365,7 @@ declare function form:render-list($field,$value) {
         then "checkbox"
         else fn:error(xs:QName("FIELD-OPTION-TYPE-ERROR"),"Type is not value for renderlist",$type)        
     return (
-       form:render-before($field), 
+       form:before($field), 
        if($field/domain:constraint/@inList) then 
          let $optionlist := domain:get-field-optionlist($field)
          for $option in $optionlist/domain:option
@@ -362,7 +373,7 @@ declare function form:render-list($field,$value) {
          return (
          <label class="value control-label">
            <input name="{form:get-field-name($field)}" type="{$ui-type}">
-           {form:render-attributes($field)}
+           {form:attributes($field)}
            {attribute value {$option/text()}}
            {
             if($value = fn:data($option)) 
@@ -377,10 +388,13 @@ declare function form:render-list($field,$value) {
             ()
        else ()
        ,
-       form:render-after($field)
+       form:after($field)
   )          
 };
-declare function form:render-checkbox-value(
+(:~
+ : Renders a value as a checkbox
+~:)
+declare function form:checkbox-value(
 $field as element(),
 $mode as xs:string,
 $value as item()*
@@ -390,13 +404,14 @@ $value as item()*
   else attribute value {xs:string($value) eq "false"}
 };
 
-declare function form:render-checkbox($field,$value)
+declare function form:checkbox($field,$value)
 {
   <div class="control-group">{
-   form:render-before($field),
+   form:before($field),
     <div class="controls">     
+      <label class="checkbox inline">
        <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="radio" value="true">
-       {form:render-attributes($field)}
+       {form:attributes($field)}
        {
         if($value castable as xs:boolean) 
         then if($value cast as xs:boolean  = fn:true()) then attribute checked{"checked"} else ()
@@ -404,151 +419,158 @@ declare function form:render-checkbox($field,$value)
        }
        True
        </input>
+       </label>
+       <label class="checkbox inline">
        <input name="{form:get-field-name($field)}" type="radio" value="false"  >
-       {form:render-attributes($field)}
+       {form:attributes($field)}
        {if($value castable as xs:boolean) 
         then if($value cast as xs:boolean  = fn:false()) then attribute checked{"checked"} else ()
         else () 
        }
        False
-       </input>      
-       {form:render-after($field)}
+       </input>
+       </label>       
+       {form:after($field)}
        </div>
     }</div>
 };
 
-declare function form:render-money($field,$value)
+declare function form:money($field,$value)
 {(
-           form:render-before($field), 
+           form:before($field), 
            <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text">
-           {form:render-attributes($field)}
-           {form:render-values($field,$value)}
+           {form:attributes($field)}
+           {form:values($field,$value)}
            </input>,
-           form:render-after($field)
+           form:after($field)
 )};
 
-declare function form:render-number($field,$value)
+declare function form:number($field,$value)
 {
 (
-   form:render-before($field), 
+   form:before($field), 
    <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text">
-   {form:render-attributes($field)}
-   {form:render-values($field,$value)}
+   {form:attributes($field)}
+   {form:values($field,$value)}
    </input>,
-   form:render-after($field)
+   form:after($field)
 )
 };
-declare function form:render-password($field,$value)
-{(
-   form:render-before($field), 
-   <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="password">
-   {form:render-attributes($field)}
-   {form:render-values($field,$value)}
-   </input>,
-   form:render-after($field)
-)};
+declare function form:password($field,$value)
+{
+ <div class="control-group">{(
+   form:before($field), 
+   <div class="controls">
+         <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="password">
+         {form:attributes($field)}
+         {form:values($field,$value)}
+         </input>
+   </div>,
+   form:after($field)
+   )}</div>
+};
 
-declare function form:render-email($field,$value)
+declare function form:email($field,$value)
 {(
-   form:render-before($field), 
+   form:before($field), 
    <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text">
-   {form:render-attributes($field)}
-   {form:render-values($field,$value)}
+   {form:attributes($field)}
+   {form:values($field,$value)}
    </input>,
-   form:render-after($field)
+   form:after($field)
 )};
 
-declare function form:render-search($field,$value)
+declare function form:search($field,$value)
 {(
-       form:render-before($field), 
+       form:before($field), 
        <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text">
-       {form:render-attributes($field)}
-       {form:render-values($field,$value)}
+       {form:attributes($field)}
+       {form:values($field,$value)}
        </input>,
-       form:render-after($field)
+       form:after($field)
 )};
 
-declare function form:render-url($field,$value)
+declare function form:url($field,$value)
 {(
-       form:render-before($field), 
+       form:before($field), 
        <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text">
-       {form:render-attributes($field)}
-       {form:render-values($field,$value)}
+       {form:attributes($field)}
+       {form:values($field,$value)}
        </input>,
-       form:render-after($field)
+       form:after($field)
 )};
 
-declare function form:render-choice($field,$value)
+declare function form:choice($field,$value)
 {(
-       form:render-before($field), 
+       form:before($field), 
        <select id="{form:get-field-name($field)}" name="{form:get-field-name($field)}">
-       {form:render-attributes($field)}
-       {form:render-values($field,$value)}
+       {form:attributes($field)}
+       {form:values($field,$value)}
        </select>,
-       form:render-after($field)
+       form:after($field)
 )};
 
-declare function form:render-entity($field,$value)
+declare function form:entity($field,$value)
 {(
-       form:render-before($field), 
+       form:before($field), 
        <select id="{form:get-field-name($field)}" name="{form:get-field-name($field)}">
-       {form:render-attributes($field)}
-       {form:render-values($field,$value)}
+       {form:attributes($field)}
+       {form:values($field,$value)}
        </select>,
-       form:render-after($field)
+       form:after($field)
 )};
 
-declare function form:render-country($field,$value)
+declare function form:country($field,$value)
 {(
-       form:render-before($field), 
+       form:before($field), 
        <select id="{form:get-field-name($field)}" name="{form:get-field-name($field)}">
-       {form:render-attributes($field)}
-       {form:render-values($field,$value)}
+       {form:attributes($field)}
+       {form:values($field,$value)}
        </select>,
-       form:render-after($field)
+       form:after($field)
 )};
 
-declare function form:render-locale($field,$value)
+declare function form:locale($field,$value)
 {(
-    form:render-before($field), 
+    form:before($field), 
     <select id="{form:get-field-name($field)}" name="{form:get-field-name($field)}">
-    {form:render-attributes($field)}
-    {form:render-values($field,$value)}
+    {form:attributes($field)}
+    {form:values($field,$value)}
     </select>,
-    form:render-after($field)
+    form:after($field)
 )};
 
-declare function form:render-time($field,$value)
+declare function form:time($field,$value)
 { <div class="control-group">{
-       form:render-before($field),
+       form:before($field),
        <div class="controls">
-         <div id="{form:get-field-name($field)}_time" class="bootstrap-timepicker input-append">
+         <div id="{form:get-field-name($field)}_time" class="input-append">
             <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text" data-format="hh:MM:ss">
-            {form:render-attributes($field)}
-            {form:render-values($field,$value)}
+            {form:attributes($field)}
+            {form:values($field,$value)}
             </input>
             <span class="add-on"><i class="icon-time"></i></span>
          </div>
        </div>
        ,
-       form:render-after($field)
+       form:after($field)
   }</div>
 };
 
-declare function form:render-date($field,$value)
+declare function form:date($field,$value)
 {  <div class="control-group">{
-       form:render-before($field),
+       form:before($field),
        <div class="controls">
-         <div class="date input-append">
-            <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text" data-date-format="yyyy-mm-dd">
-            {form:render-attributes($field)}
-            {form:render-values($field,$value)}
+         <div class="input-append">
+            <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text">
+            {form:attributes($field)}
+            {form:values($field,$value)}
             </input>
             <span class="add-on"><i class="icon-calendar" data-date-icon="icon-calendar"> </i></span>
          </div>
        </div>
        ,
-       form:render-after($field)
+       form:after($field)
   }</div>
 };
 
@@ -556,81 +578,81 @@ declare function form:render-date($field,$value)
  : Function binds controls to their respective request data 
  : from the request map;
 ~:)
-declare function form:render-dateTime($field,$value)
+declare function form:dateTime($field,$value)
 {
   <div class="control-group">{
-       form:render-before($field),
+       form:before($field),
        <div class="controls">
          <div id="{form:get-field-name($field)}_dateTime" class="dateTime input-append">
             <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text" data-date-format="yyyy-MM-dd hh:mm:ss">
-            {form:render-attributes($field)}
-            {form:render-values($field,$value)}
+            {form:attributes($field)}
+            {form:values($field,$value)}
             </input>
             <span class="add-on"><i class="icon-calendar" data-date-icon="icon-calendar"> </i></span>
          </div>
        </div>
        ,
-       form:render-after($field)
+       form:after($field)
   }</div>
 };
 
-declare function form:render-collection($field,$value)
+declare function form:collection($field,$value)
 {(
-   form:render-before($field), 
+   form:before($field), 
    <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text">
-   {form:render-attributes($field)}
-   {form:render-values($field,$value)}
+   {form:attributes($field)}
+   {form:values($field,$value)}
    </input>,
-   form:render-after($field)
+   form:after($field)
 )};
 
-declare function form:render-repeated($field,$value)
+declare function form:repeated($field,$value)
 {(
-   form:render-before($field), 
+   form:before($field), 
    <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="text">
-   {form:render-attributes($field)}
-   {form:render-values($field,$value)}
+   {form:attributes($field)}
+   {form:values($field,$value)}
    </input>,
-   form:render-after($field)
+   form:after($field)
 )};
 
-declare function form:render-hidden($field,$value)
+declare function form:hidden($field,$value)
 {(
    <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="hidden">
-   {form:render-attributes($field)}
-   {form:render-values($field,$value)}
+   {form:attributes($field)}
+   {form:values($field,$value)}
    </input>,
-   form:render-after($field)
+   form:after($field)
 )};
 
-declare function form:render-button($field,$value)
+declare function form:button($field,$value)
 {(
-   form:render-before($field), 
+   form:before($field), 
    <button name="{form:get-field-name($field)}" type="button">
-   {form:render-attributes($field)}
-   {form:render-values($field,$value)}
+   {form:attributes($field)}
+   {form:values($field,$value)}
    </button>,
-   form:render-after($field)
+   form:after($field)
 )};
 
-declare function form:render-submit($field,$value)
+declare function form:submit($field,$value)
 {(
-   form:render-before($field), 
+   form:before($field), 
    <button name="{form:get-field-name($field)}" type="submit">
-   {form:render-attributes($field)}
-   {form:render-values($field,$value)}
+   {form:attributes($field)}
+   {form:values($field,$value)}
    </button>,
-   form:render-after($field)
+   form:after($field)
 )};
 
-declare function form:render-clear($field,$value)
+declare function form:clear($field,$value)
 {(
-   form:render-before($field), 
+   form:before($field), 
    <button name="{form:get-field-name($field)}" type="clear">
-   {form:render-attributes($field)}
-   {form:render-values($field,$value)}
+   {form:attributes($field)}
+   {form:values($field,$value)}
    </button>,
-   form:render-after($field)
+   form:after($field)
 )};
 
 declare function form:binary-content-type-icon($value) {
@@ -640,72 +662,75 @@ declare function form:binary-content-type-icon($value) {
       then fn:replace(fn:replace($content-type,"/","-"),"\.","")
       else "unknown"
 };
-
-declare function form:render-binary($field,$value) {
-  <div class="control-group">
-    {form:render-before($field)}
-    <div class="controls">
-         <div class="fileupload fileupload-new" data-provides="fileupload">
-             <div class="input-append">
-                 <div class="uneditable-input span3">
-                     <i class="icon-file fileupload-exists"></i> 
-                     <span class="fileupload-preview"></span></div>
-                     <span class="btn btn-file">
-                         <span class="fileupload-new icon-plus"></span>
-                         <span class="fileupload-exists icon-edit"></span>
-                           <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="file">
-                             {form:render-attributes($field)}
-                             {form:render-values($field,$value)}
-                           </input>
-                     </span>
-                     <span class="btn fileupload-exists add-on" data-dismiss="fileupload">
-                       <i class="icon-remove"></i>
-                     </span>
-                     <!--<a href="#" class="btn fileupload-exists add-on" data-dismiss="fileupload">
-                     
-                     </a>-->
-                 </div>
-          </div>
-     </div>
-     {form:render-after($field)}
-  </div>
+(:~
+ : Returns a url reference for binary instance  
+~:)
+declare function form:binary-url($field,$value) {
+  let $model := $field/ancestor::domain:model
+  let $application := response:application()
+  let $application := if($application) then $application else domain:get-default-application()
+  let $controller := domain:get-model-controller($application,$model)
+  let $identity-field := domain:get-model-identity-field($model)
+  let $id := domain:get-field-value($identity-field,response:body())
+  return
+    fn:concat("",$controller/@name,"binary?name=",$field/@name,"&amp;uuid=",$id)
 };
 
-declare function form:render-csrf($field,$value)
+declare function form:binary($field,$value) {
+  <div class="control-group">{
+       form:before($field),
+       <div class="controls">       
+            <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" type="file">
+            {form:attributes($field)}
+            {form:values($field,$value)}
+            </input>
+            <span class="links">
+                <strong>File: {fn:string($value/@filename)}</strong>
+                <a href="{form:binary-url($field,$value)}" class="filename">
+                <span class="icon-download-alt pull-right"></span>
+                </a>
+            </span>
+       </div>
+       ,
+       form:after($field)
+  }</div>
+};
+
+declare function form:csrf($field,$value)
 {(
-   form:render-before($field), 
+   form:before($field), 
    <input id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" id="CSRFToken" type="hidden">
-   {form:render-attributes($field)}
-   {form:render-values($field,$value)}
+   {form:attributes($field)}
+   {form:values($field,$value)}
    </input>,
-   form:render-after($field)
+   form:after($field)
 )};
 
-declare function form:render-schema-element($field,$value) 
+declare function form:schema-element($field,$value) 
 {(
  <div class="control-group">{
-  form:render-before($field),
+  form:before($field),
   <div class="controls">  
     <textarea name="{form:get-field-name($field)}" id="{domain:get-field-id($field)}">
-        { form:render-attributes($field) }
+        { form:attributes($field) }
         { if( $value/element() or $value instance of element() and $value) then xdmp:quote($value) else $value}
      </textarea>
    </div>,
-   form:render-after($field)
+   form:after($field)
    }</div>
 )};
 
-declare function form:render-complex($field,$value) 
+declare function form:complex($field,$value) 
 {(
   <div class="control-group">{ 
-       form:render-before($field), 
+       form:before($field), 
        <div class="controls">
         <textarea name="{form:get-field-name($field)}" id="{domain:get-field-id($field)}">
-            { form:render-attributes($field) }
+            { form:attributes($field) }
             { if( $field/@type = "schema-element") then xdmp:quote($value) else $value}
          </textarea>
        </div>,
-       form:render-after($field)
+       form:after($field)
    }</div>
 )};
 
@@ -743,30 +768,22 @@ declare function form:build-child-grid($field,$value) {
               ))
 	 )
 	 
-     let $modelData := json:xmlToJSON(
-     <json type="array">{
-        if($value instance of node()) then
-         for $node in $value/element()
-         return
-         <item type="object">{$node/node()}</item>
-        else ()
-     }</json>)
+     let $modelData := ()
 
 	return
-	
 	(
-     form:render-before($field), 
+     form:before($field), 
       <div class="complexGridWrapper">
            <div id="{$fieldKey}" class="complexGrid"></div>
            <script type="text/javascript">
                 buildEditGrid('{$fieldKey}', {$modelData},   {$columnSchema}) 
            </script>
        </div>,
-      form:render-after($field)
+      form:after($field)
    )
 };
 
-declare function form:render-lookup($field,$value) {
+declare function form:lookup($field,$value) {
     let $application := response:application()
     let $modelName := fn:tokenize(fn:data($field/@reference),":")[2]
     let $reference := fn:data($field/@reference)
@@ -776,8 +793,8 @@ declare function form:render-lookup($field,$value) {
     let $refAction   := $refTokens[3]
     let $fieldName  := form:get-field-name($field)
     let $lookupReference := (
-        fn:data($field/domain:ui/@lookupReference),
-        domain:get-model-controller-name($refType)
+        fn:data($field/domain:ui/@lookup),
+        domain:get-model-controller-name($application,$refType)
         )[1]
     let $refController := 
         let $tokenz := fn:tokenize($lookupReference,":")
@@ -788,48 +805,29 @@ declare function form:render-lookup($field,$value) {
                fn:concat("/",$tokenz[1],"/lookup.xml")      
           else fn:error(xs:QName("LOOKUP-REFERENCE-ERROR"),"Unable to resolve reference",$tokenz)
     return
-      <div class="lookupSelect control-group">
-       {form:render-before($field)}  
+      <div class="control-group">
+       {form:before($field)}  
        <div class="controls">
-       <select id="{$fieldName}" name="{$fieldName}">
-       {   (:Added validation Rendering:)
-           form:render-validation($field),
-           attribute readonly { "readonly" },
-           if($field/@occurrence = ("*","+")) 
-           then (
-               attribute multiple { "multiple" },
-               attribute class {("field", "lookup", $FORM-SIZE-CLASS,$field/@name  )}
-               )
-            else (
-                attribute class {("field", "lookup", $FORM-SIZE-CLASS,$field/@name )}
-            )
-              
-        }
-        {
-            (: Only use the current value if present :)
-            if($refParent = 'model') then
-               element option {
-                    attribute value {$value/@ref-id},
-                    attribute selected { "selected" },
-                    $value/text()
-               }
-            else fn:error(xs:QName("INVALID_LOOKUP_TYPE"),"Lookup can only use type:model")
-         }
-       </select>
-       {
-        if(($field/domain:navigation/@editable = 'false' and $FORM-MODE = "edit")
-                or ($field/domain:navigation/@newable = 'false' and $FORM-MODE = "new")
-                or ($FORM-MODE = "readonly")
-        )  then ()
-        else
-           <button id="{$fieldName}_button" class="lookup button" value="{$refController}" type="button"></button> 
-       }
+            <input id="{$fieldName}" name="{$fieldName}" type="hidden" data-lookup="{$refController}" value="{$value/@ref-id}">
+            {   (:Added validation Rendering:)
+                form:validation($field),
+                if($field/@occurrence = ("*","+")) 
+                then (
+                    attribute multiple { "multiple" },
+                    attribute class {("field", "lookup", $FORM-SIZE-CLASS,$field/@name  )}
+                    )
+                 else (
+                     attribute class {("field", "lookup", $FORM-SIZE-CLASS,$field/@name )}
+                 )
+                   
+             }
+            </input>
        </div>       
-       {form:render-after($field)}
+       {form:after($field)}
       </div>
 };
 
-declare function form:render-reference($field,$value) {
+declare function form:reference($field,$value) {
     let $application := response:application()
     let $modelName := fn:tokenize(fn:data($field/@reference),":")[2]
     let $reference := fn:data($field/@reference)
@@ -844,10 +842,10 @@ declare function form:render-reference($field,$value) {
       else "readonly"
     return
     <div class="referenceSelect control-group">
-           { form:render-before($field) }
+           { form:before($field) }
        <div class="controls">    
            <select id="{form:get-field-name($field)}" name="{form:get-field-name($field)}" >{   
-                form:render-validation($field),
+                form:validation($field),
                 if(($field/domain:navigation/@editable = 'false' and $FORM-MODE = "edit")
                     or ($field/domain:navigation/@newable = 'false' and $FORM-MODE = "new")
                     or ($FORM-MODE = "readonly")
@@ -904,7 +902,7 @@ declare function form:render-reference($field,$value) {
              }
            </select>         
         </div>           
-           { form:render-after($field) }
+           { form:after($field) }
     </div>
 };
 
@@ -920,9 +918,23 @@ declare function form:field-grid-column(
     let $fieldType := fn:local-name($field)
     let $label := fn:data($field/@label)
     let $dataType := fn:data($field/@type)
-    let $listable :=  ($field/domain:navigation/@listable, $field/domain:navigation/@visible,"true")[1]
-    let $colWidth := (fn:data($field/domain:ui/@gridWidth/xs:integer(.)),200)[1]
+    let $listable := ($field/domain:navigation/@listable, $field/domain:navigation/@visible,"true")[1]
+    let $colWidth := (fn:data($field/domain:ui/@gridWidth/xs:integer(.)),200) [1]
+    let $align := 
+        if($dataType = "boolean") then "center" 
+        else if($dataType = ("decimal","float","double")) then "right"
+        else "left"
     let $sortable := ($field/domain:navigation/@sortable,"true")[1]
+    let $formatter :=  
+         if($field/domain:ui/@formatter ne "" and fn:exists($field/domain:ui/@formatter)) 
+         then js:kv("formatter",fn:data($field/domain:ui/@formatter))
+         else if($field/@occurrence = ("+","*")) then js:kv("formatter",js:literal("arrayFormatter"))
+         else if($dataType eq "binary") then js:kv("formatter",js:literal("binaryFormatter"))
+         else if($dataType eq "boolean") then (js:kv("formatter","checkbox"),js:kv("align","center"))
+         else if($label eq "Level") then js:kv("formatter",js:literal("logLevelFormatter"))
+         else if($label eq "Type") then js:kv("formatter",js:literal("logTypeFormatter"))
+         else if($label eq "Log Date") then js:kv("formatter",js:literal("logDateFormatter"))
+         else ()
     return
     if($listable = "true") then
          js:o((
@@ -936,14 +948,10 @@ declare function form:field-grid-column(
              js:kv("fixed",fn:true()),
              js:kv("sortable",$sortable),
              js:kv("width",$colWidth),
+             js:kv("align",$align),
              js:kv("searchable",$field/domain:navigation/@searchable eq "true"),
              js:kv("hidden",$field/domain:ui/@type eq "hidden" or $field/domain:navigation/@listable eq "false"),
-             if($field/domain:ui/@formatter ne "" and fn:exists($field/domain:ui/@formatter)) 
-             then js:kv("formatter",fn:data($field/domain:ui/@formatter))
-             else if($field/@occurrence = ("+","*")) then js:kv("formatter","arrayFormatter")
-             else if($dataType eq "binary") then js:kv("formatter",js:literal("binaryFormatter"))
-             else if($dataType eq "boolean") then (js:kv("formatter","checkbox"),js:kv("align","center"))
-             else ()             
+             $formatter
          ))
      else ()
 };

@@ -3,18 +3,18 @@ xquery version "1.0-ml";
 : Documentation Controller
 : @author garyvidal@hotmail.com
 ~:)
-module namespace controller = "http://www.xquerrail-framework.com/demo/controller/docs";
+module namespace controller = "http://xquerrail.com/demo/controller/docs";
 
-import module namespace request = "http://www.xquerrail-framework.com/request"
+import module namespace request = "http://xquerrail.com/request"
 at "/_framework/request.xqy";
 
-import module namespace response = "http://www.xquerrail-framework.com/response"
+import module namespace response = "http://xquerrail.com/response"
 at "/_framework/response.xqy";
 
-import module namespace domain = "http://www.xquerrail-framework.com/domain"
+import module namespace domain = "http://xquerrail.com/domain"
     at "/_framework/domain.xqy";
 
-import module namespace base = "http://www.xquerrail-framework.com/model/base"
+import module namespace base = "http://xquerrail.com/model/base"
     at "/_framework/base/base-model.xqy";
 
 

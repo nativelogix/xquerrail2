@@ -6,7 +6,7 @@ xquery version "1.0" encoding "UTF-8";
 (:~
  : The parser that was generated for the JSON grammar.
  :)
-module namespace p="http://www.xquerrail-framework.com/parsers/json";
+module namespace p="http://xquerrail.com/parsers/json";
 
 declare default function namespace "http://www.w3.org/2005/xpath-functions";
 declare namespace xdmp = "http://marklogic.com/xdmp";

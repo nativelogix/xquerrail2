@@ -2,11 +2,11 @@ xquery version "1.0-ml";
 (:~
  : Response Helper function wrapper.
 ~:)
-module namespace response = "http://www.xquerrail-framework.com/response";
+module namespace response = "http://xquerrail.com/response";
 
-import module namespace request = "http://www.xquerrail-framework.com/request" at "request.xqy";
+import module namespace request = "http://xquerrail.com/request" at "request.xqy";
 
-declare namespace domain = "http://www.xquerrail-framework.com/domain";
+declare namespace domain = "http://xquerrail.com/domain";
 
 
 declare variable $CONTENT-TYPE := "response:content-type";
@@ -27,6 +27,7 @@ declare variable $ERROR       := "response:error";
 declare variable $PARTIAL     := "response:partial";
 declare variable $BASE        := "response:base";
 declare variable $MODEL       := "response:model";
+declare variable $DOWNLOAD    := "response:download";
 
 declare variable $USER        := "response:user";
 (:Default Prefix for Slots:)
@@ -111,10 +112,10 @@ declare private function response:set-defaults($_request)
         if(fn:exists(response:application())) then () else response:set-application(fn:data(request:application())),
         if(fn:exists(response:controller()))  then () else response:set-controller(fn:data(request:controller())),
         if(fn:exists(response:action()))      then () else response:set-action(fn:data(request:action())),
-        if(fn:exists(response:view()))      then   () else response:set-view(fn:data(request:view())),
-        if(fn:exists(response:format()))      then () else response:set-action(fn:data(request:format())),
+        if(fn:exists(response:view()))        then () else response:set-view(fn:data(request:action())),
+        if(fn:exists(response:format()))      then () else response:set-format(fn:data(request:format())),
         if(fn:exists(response:partial()))     then () else response:set-partial(fn:data(request:partial())),
-        if(fn:exists(response:user()))     then () else response:set-user(fn:data(request:user-name()))
+        if(fn:exists(response:user()))        then () else response:set-user(fn:data(request:user-name()))
    ) else ()
 
 };
@@ -131,14 +132,17 @@ declare function response:user()
 declare private function response:save-flash() {
   (
     let $flash-map := map:map()
-    let $_ := map:put($flash-map,"test","Test Key")
-    let $_  := for $fl in map:keys($response)[fn:starts-with(.,$FLASH)] return map:put($flash-map,$fl,map:get($response,$fl))
-    return
+    let $_  := 
+        for $fl in map:keys($response)[fn:starts-with(.,$FLASH)]
+        return map:put($flash-map,$fl,map:get($response,$fl))
+    return(
+      xdmp:log(("Saving Flash",$flash-map)),
       xdmp:set-session-field("FLASH",$flash-map)
-  )
+  ))
 };
 declare private function response:initialize-flash() as empty-sequence() {
     let $sess-field := xdmp:get-session-field("FLASH")
+    let $_ :=       xdmp:log(("Loading Flash",$sess-field))
     let $flash-map  := 
         if($sess-field instance of map:map) 
         then $sess-field
@@ -239,10 +243,12 @@ declare function response:set-content-type(
 {
     map:put($response,$CONTENT-TYPE,$name)
 };
+
 declare function response:content-type()
 {
   map:get($response,$CONTENT-TYPE)
 };
+
 declare function response:set-application($application as xs:string)
 {
    map:put($response,$APPLICATION,$application)
@@ -321,6 +327,11 @@ declare function response:redirect()
    map:get($response,$REDIRECT)
 };
 
+declare function response:add-header($key,$value)
+{
+   map:put($response,fn:concat($HEADER,$key),$value)
+};
+
 declare function response:add-response-header($key,$value)
 {
    map:put($response,fn:concat($HEADER,$key),$value)
@@ -342,7 +353,7 @@ declare function response:response-headers() as map:map
    )  
 };
 
-declare function response:add-para(
+declare function response:add-param(
   $key as xs:string,
   $value as xs:string
 ) as empty-sequence()
@@ -439,7 +450,7 @@ declare function response:title()
 
 (:~
  :META~
- :
+ 
 ~:)
 declare function response:add-meta($key,$value)
 {
@@ -606,11 +617,16 @@ declare function response:clear-stylesheets()
   return map:delete($response,$k)
 };
 
-
 declare function response:set-model($model as element(domain:model)?) {
   map:put($response,$MODEL,$model)
 };
 
 declare function response:model() {
   map:get($response,$MODEL)
+};
+declare function response:is-download($value as xs:boolean) {
+  map:put($response,$DOWNLOAD,$value)
+};
+declare function response:is-download() as xs:boolean {
+  map:get($response,$DOWNLOAD) = fn:true()
 };

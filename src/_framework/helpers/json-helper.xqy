@@ -10,7 +10,7 @@ xquery version "1.0-ml";
         ie. dc.identifier dc="http://purl.org/dc/elements/1.1"
             <some.element xmlns="urn:some"/>  translates to : "some.some_x25_element" : ""
 ~:)
-module namespace json = "http://www.xquerrail-framework.com/helper/json";
+module namespace json = "http://xquerrail.com/helper/json";
 
 declare namespace js = "http://marklogic.com/xdmp/json";
 declare namespace jsonx = "http://www.ibm.com/xmlns/prod/2009/jsonx";
@@ -195,9 +195,9 @@ let $_process  :=
 		    for $attr in $node/@*[fn:local-name(.) ne ("type")]
 		    return 
 		    	if($options = "attributes-as-elements") then
-		    	    	json:put($attr_map,fn:local-name($attr),json:serialize-value($attr,$options))
+		    	   json:put($attr_map,fn:local-name($attr),json:serialize-value($attr,$options))
 		    	else 
-		    		json:put($child_map,fn:local-name($attr),json:serialize-value($attr,$options))
+		    	   json:put($child_map,fn:local-name($attr),json:serialize-value($attr,$options))
 	    else ()
 	    
          return
@@ -320,7 +320,7 @@ declare private function json:serialize-value($elem as node(), $options as xs:st
   let $value-map := js:object()
   let $value := 
   	if(fn:not(fn:exists($elem/node())) and $options = "empty-as-null") then
-	    ()
+	    if($elem instance of attribute()) then fn:data($elem) else ()
 	else if($elem castable as xs:dateTime) then
 	    if($options = "use-date-constructor") then
 	    	fn:concat("/Date(", json:get-epoch-seconds(xs:dateTime($elem)) , ")/")
@@ -349,12 +349,12 @@ declare private function json:serialize-value($elem as node(), $options as xs:st
        if($options = "xson") then 
           (json:put($value-map,"$t",$value),$value-map)
        else 
-          $value
+          fn:data($value)
 };
 (:~
    Checks if a map contains a key and appends items as a sequence or creates a new map:entry
 ~:)
-declare private function json:put($map as map:map,$key as xs:string,$value as item()) {
+declare private function json:put($map as map:map,$key as xs:string,$value as item()*) {
  let $item := map:get($map,$key)
  let $_    := 
    if($key eq "") then 

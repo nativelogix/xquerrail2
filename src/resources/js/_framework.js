@@ -1,7 +1,30 @@
 var indexGrid = null;
-var codeMirrors = [];
+
+function arrayFormatter(cellValue, options, rowObject) {
+  var values = [];
+  var colValues = $(rowObject).find(options.colModel.name)
+  if(colValues === null || colValues === undefined) {
+    return "&nbsp;"
+  } else {
+      $(colValues).each(function(i,e) {
+         values.push($(e).text());
+      });
+      if(values.length == 0) {
+      return "&nbsp;";
+      } else { 
+        return "(" + values.join("; ") + ")";
+      }
+   }
+}
 
 
+function binaryFormatter(cellValue, options, rowObject) {
+   return   "<a href='./binary?name=" + options.colModel.name + "&uuid=" + options.rowId + "' class='download-link' style='color:blue'><span class='ui-icon ui-icon-link' style='display:inline-block'></a>" + $(rowObject).find(options.colModel.name).attr("filename");
+}
+
+function binaryEditorFormatter(cellValue,options, rowObject) {
+   return "<span><input type='file' name='documentFile' id='documentFile_grid'/><a onlick=''>" + $(rowObject).find(options.colModel.name).attr("filename")+ "<span class='ui-icon-trash'></a></span>"
+};
 function initToolbar(props) {
   var id = jQuery(indexGrid).jqGrid('getGridParam', 'selrow');
   if(props["new"] == true){
@@ -88,7 +111,7 @@ function importForm() {
         jQuery('#popup').html(data);
   });
   jQuery("#popup").dialog({ 
-     width: 800, 
+     width: 1000, 
      height: 600, 
      autoOpen: true,
      resizable:false,
@@ -101,34 +124,28 @@ function importForm() {
 //Popup Dialog Form
 function exportForm() {
   var url = "/" + context.controller + "/export.html?_partial=true";
-  jQuery('#popup').html("<div class='loading'>...</div>");
+  var dialog = $("<div id='popup'></div>");
+  dialog.html("<div class='loading'>...</div>");
   jQuery.get(url, function (data) {
-        jQuery('#popup').html(data);
+        jQuery(dialog).html(data);
+      
   });
-  jQuery("#popup").dialog({ 
-     width: 840, 
-     height: 500, 
+  jQuery(dialog).dialog({ 
+     width: 1000, 
+     height: 600, 
      autoOpen: true ,
      modal:true ,
      title:'Export Options'     
   });
 }
-//Creates a partial form inside of ajax 
-function editFormAjax(container) {
-
-}
-
-function newFormAjax(container) {
-
-}
-function deleteFormAjax(container) {
-
-}
-
 /*Grid Helper */
 var gridHelper = window.gridHelper || {}
 gridHelper = {
     "_this" : this,
+    multiselect: false,
+    enableMultiSelect :  function (isEnable) {
+    $(this).jqGrid('setGridParam', {multiselect: (isEnable ? true : false)});
+    },
     _context : {},
     context  : function(context) {this._context = context},
     init : function() { /*Globals*/
@@ -146,8 +163,9 @@ gridHelper = {
          });
     },
     resizeGrid : function () {
-        jQuery(indexGrid).setGridWidth(jQuery("#list-wrapper").innerWidth()) - 80;
-        jQuery(indexGrid).setGridHeight(jQuery("#list-wrapper").innerHeight() - 80);
+        $("#list-wrapper").height($(window).height() - $("#list-wrapper").offset().top - 110);
+        jQuery(indexGrid).setGridWidth(jQuery("#list-wrapper").innerWidth()) - 100;
+        jQuery(indexGrid).setGridHeight(jQuery("#list-wrapper").innerHeight());
     },
     xmlListReaderSettings : function() {
         return  {
@@ -160,6 +178,7 @@ gridHelper = {
             repeatitems: false
         };
    },
+   
    jsonListReaderSettings : function() {
        return {
             root: 'list',
@@ -172,9 +191,49 @@ gridHelper = {
     },
     initListGrid : function(gridId, gridParams) {
         indexGrid = gridId;
-        jQuery(gridId).jqGrid(gridParams)
+        extendParams = {
+            url : gridParams.url,
+            pager : gridParams.pager,
+            id : gridParams.id,
+            colModel : gridParams.colModel,
+            sortname : gridParams.sortname,
+            emptyrecords : gridParams.emptyrecords,
+            loadtext : gridParams.loadtext,
+            xmlReader : gridParams.xmlReader,
+            jsonReader : gridParams.jsonReader,
+            datatype: "xml",
+            sortorder: 'desc',    
+            loadonce:false,
+            rowNum:20,
+            pgbuttons: true,                
+            gridview: true,
+            altRows : true,
+            pgbuttons:true,
+            viewrecords :true,
+            navigator:true,
+            sortable:true,
+            rownumbers:true,
+            rowList: [20,50,100,200],
+            width: '500',
+            height: '500',
+            multiselect: gridParams.multiselect ? gridParams.multiselect : false,
+            onSelectRow   : function(rowid,e) {
+                var gsr = jQuery(this).jqGrid('getGridParam','selrow'); 
+    		    if(gsr){ 
+    			   var rowData = jQuery(this).getRowData(gsr);
+                   context.currentId = rowid;
+                   context.currentLabel = rowData[context.modelKeyLabel];
+                   if(gridParams.selectAction !== undefined && gridParams.selectAction !== null) {
+                        return gridParams.selectAction(rowid);
+                   } else return true
+                }
+            },
+            ondblClickRow : function(rowid) {
+                gridParams.editAction(rowid);
+            }
+        };
+        jQuery(gridId).jqGrid(extendParams)
         .navGrid(gridId + '_pager',{edit: false, add: false, del: false, search: false, reload: true});
-        
         jQuery ("table.ui-jqgrid-btable tr", jQuery(gridId)).css ("height", 28);
         jQuery ("ui-pg-table .ui-pg-selbox").css("height",24);
         jQuery(gridId).trigger("reloadGrid");   
@@ -208,8 +267,20 @@ gridHelper = {
           } else { 
             return "(" + values.join("; ") + ")";
           }
-   }
-   /*gridHelper*/
+   },
+   /*Helper Function to create xmlReaderSettings*/
+   buildXmlReaderSettings : function(rowName,idName) {
+     return {
+        root: 'list',
+        row: rowName,
+        id: idName,
+        page: 'list>currentpage',
+        total: 'list>totalpages',
+        records: 'list>totalrecords',
+        repeatitems: false
+     };   
+  } /*End gridHelper*/
+  
 }
 
 /*
@@ -222,7 +293,7 @@ function initControls() {
     $("input.time").timepicker();
     $("div.dateTime").datetimepicker({autoclose:true});
     $("input.date").datepicker({autoclose :true});
-    $(".html-editor").wysihtml5({
+    $("textarea.html-editor").wysihtml5({
     	"font-styles": true, //Font styling, e.g. h1, h2, etc. Default true
     	"emphasis": true, //Italics, bold, etc. Default true
     	"lists": true, //(Un)ordered lists, e.g. Bullets, Numbers. Default true
@@ -230,9 +301,9 @@ function initControls() {
     	"link": true, //Button to insert a link. Default true
     	"image": true, //Button to insert an image. Default true,
     	"color": false, //Button to change color of font  
-        "parserRules" : wysihtml5ParserRules
-        
+        "parserRules" : wysihtml5ParserRules  
     });
+
 };
 
 $(function() {
@@ -246,6 +317,14 @@ $(function() {
     if(window.toolbarMode != undefined) { 
         initToolbar(toolbarMode);
     }
+    $(".nav-tabs").tab();
     //Initialize any dynamic form controls
-    initControls();
+    //initControls();
+    var readonlyTags = $('.tags[readonly="readonly"]').parent().find('.tagsinput');
+    $(readonlyTags).find('.icon-remove').remove();
+    $(readonlyTags).find('input').remove();
+
+    $(window).on("resize","", function(e) {
+        
+    });    
 });            

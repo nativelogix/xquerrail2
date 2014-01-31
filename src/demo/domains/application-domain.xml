@@ -1,10 +1,12 @@
-<domain xmlns="http://www.xquerrail-framework.com/domain"
+<domain xmlns="http://xquerrail.com/domain"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.xquerrail-framework.com/domain file:/C:/Users/gvidal/workspace64/marklogic_valrico/_framework/schemas/domain.xsd">
+    xsi:schemaLocation="http://xquerrail.com/domain file:/C:/Users/gvidal/workspace64/marklogic_valrico/_framework/schemas/domain.xsd">
     <name>demo</name>
-    <content-namespace prefix="demo" namespace-uri="http://www.xquerrail-framework.com/demo"/>
-    <application-namespace prefix="xquerrail" namespace-uri="http://www.xquerrail-framework.com/demo"/>
+    <content-namespace prefix="demo" namespace-uri="http://xquerrail.com/demo"/>
+    <application-namespace prefix="xquerrail" namespace-uri="http://xquerrail.com/demo"/>
     <default-collation>http://marklogic.com/collation/codepoint</default-collation>
+    <import id="lookup" resource="lookup-domain.xml"/>
+    <import id="content" resource="content-domain.xml"/>
     <!--Implement a base class to inherit metadata-->
     <model name="base" description="Base Extension Class" persistence="abstract">
         <element name="uuid" type="identity" identity="true" label="Globally Unique Identifier">
@@ -139,6 +141,16 @@
             <navigation  searchable="true" sortable="true"  />
             <constraint required="true" />
         </element>
+        <element name="status" type="reference" reference="model:postStatus:reference" label="Status">
+            
+        </element>
+        <element name="publish" type="boolean" label="Publish" occurrence="1">
+            
+        </element>
+        <element name="tags" type="string" label="Tags" occurrence="*">
+            <ui repeatable="true"/>
+        </element>
+
         <element name="title" type="string" label="ID of the posting">
             <navigation searchable="true" sortable="true" facetable="true" />
             <constraint required="true"  />
@@ -155,6 +167,13 @@
             <ui type="html-editor">
             </ui>
         </element>
+    </model>
+    <model name="postStatus" persistence="document" label="Post Status" extends="base" key="uuid" keyLabel="statusCode">
+        <document root="postStatuses">/config/postStatus.xml</document>
+        <element name="statusCode" type="string" label="Status Code">
+            <constraint required="true" unique="true"/>
+        </element>
+        
     </model>
     <model name="document" key="uuid" keyLabel="title" persistence="directory" label="Document" extends="base">
         <directory>/docs/</directory>
@@ -176,6 +195,11 @@
             <ui type="textarea" class="prettyprint"/>
         </element>
     </model>
+
+
+    
+
+    
     <model name="allFormItems" key="id" keyLabel="id"  persistence="document">
         <document root="allFormList">/samples/allFormList.xml</document>
         <element name="id" type="string" identity="true" label="Identity Field">
@@ -200,9 +224,6 @@
         <element name="binary" type="binary" fileType="xml" fileURI="/allFormItems/binaries" label="binary(xml)">
            <navigation listable="false"/>
         </element>
-        <container name="uiTypes" label="uiTypes">
-           
-        </container>
         <optionlist name="possibleValues" type="string">
             <option label="(empty)"></option>
             <option label="value1">value1</option>
@@ -219,14 +240,16 @@
     </optionlist>
     
     <!-- Geographic Related Controllers -->
+    <!--
     <controller name="countryCodes" model="countryCode" label="Country Codes" class="lookup"/>
     <controller name="timezones" model="timezone" label="Time Zones" class="lookup"/>
     <controller name="locales" model="locale" label="Locales" class="lookup"/>
     <controller name="blogs" model="blog" label="Blog" class="blog"/>
     <controller name="posts" model="blogPost" label="Blog Post" class="blog"/>
+    <controller name="postStatus" model="postStatus" label="Post Status"/>
     <controller name="users" model="user" label="Users" class="security"/>
     <controller name="roles" model="role" label="Roles" class="security"/>
-    <controller name="allFormItems" model="allFormItems" label="All Form Items" class="misc"/>
     <controller name="docs" model="document" label="Documentation" class="docs"/>
     <controller name="api" model="apidoc" label="API" class="api"/>
+    -->
 </domain>

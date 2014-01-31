@@ -1,0 +1,15 @@
+<config xmlns="http://xquerrail.com/config">
+    <scope context="application:*:*:xml">
+      <compress>true</compress>
+    </scope>
+    
+    <scope context="application:*:*:json">
+        <compress>true</compress>
+    </scope>
+    <scope context="application:*:fields:html">
+        <compress>true</compress>
+    </scope>
+    <scope context="application:*:*:html">
+        <compress>true</compress>
+    </scope>
+</config>

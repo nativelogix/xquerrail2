@@ -8,6 +8,6 @@ declare default element namespace "http://www.w3.org/1999/xhtml";
         <a href="#" title="Example link">Example link</a>
     </div>
     <div id="copyright">
-        Powered by <a href="http://www.xquerrail-framework.com" title="Powerful XQuerrail template">www.xquerrail-framework.com</a>
+        Powered by <a href="http://xquerrail.com" title="Powerful XQuerrail template">www.xquerrail-framework.com</a>
     </div>
 </template>/*

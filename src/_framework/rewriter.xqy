@@ -15,8 +15,8 @@ xquery version "1.0-ml";
  : @see app/controller.xqy
  :
  :)
-import module namespace config = "http://www.xquerrail-framework.com/config" at "/_framework/config.xqy";
-declare namespace routing = "http://www.xquerrail-framework.com/routing";
+import module namespace config = "http://xquerrail.com/config" at "/_framework/config.xqy";
+declare namespace routing = "http://xquerrail.com/routing";
 declare option xdmp:mapping "false";
 let $request := xdmp:get-request-url()
 let $router := config:get-route-module()

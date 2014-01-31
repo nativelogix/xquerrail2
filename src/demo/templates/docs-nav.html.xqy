@@ -1,6 +1,6 @@
 
 declare default element namespace "http://www.w3.org/1999/xhtml";
-import module namespace response = 'http://www.xquerrail-framework.com/response'
+import module namespace response = 'http://xquerrail.com/response'
     at '/_framework/response.xqy';
 declare variable $response external;
 response:initialize($response),

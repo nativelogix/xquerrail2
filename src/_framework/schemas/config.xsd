@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
-    xmlns="http://www.xquerrail-framework.com/config"
+    xmlns="http://xquerrail.com/config"
     xmlns:domain="http://www.xqerrail-framework.com/config"
-    targetNamespace="http://www.xquerrail-framework.com/config" 
+    targetNamespace="http://xquerrail.com/config" 
     elementFormDefault="qualified"> 
    <xs:element name="config">
        <xs:complexType>

@@ -21,7 +21,6 @@ declare default element namespace "http://www.w3.org/1999/xhtml";
             <hr/>   
             <?template name="footer"?>
         </div> <!-- /container -->
-        <?template name="scripts"?>
     </body>
 </html>
 </template>/(comment()|node())

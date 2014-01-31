@@ -1,35 +1,37 @@
 xquery version "1.0-ml";
 
-module namespace base = "http://www.xquerrail-framework.com/engine";
+module namespace base = "http://xquerrail.com/engine";
     
-import module namespace engine  = "http://www.xquerrail-framework.com/engine"
+import module namespace engine  = "http://xquerrail.com/engine"
   at "/_framework/engines/engine.base.xqy";
   
-import module namespace config = "http://www.xquerrail-framework.com/config"
+import module namespace config = "http://xquerrail.com/config"
   at "/_framework/config.xqy";
 
-import module namespace request = "http://www.xquerrail-framework.com/request"
+import module namespace request = "http://xquerrail.com/request"
    at "/_framework/request.xqy";
    
-import module namespace response = "http://www.xquerrail-framework.com/response"
+import module namespace response = "http://xquerrail.com/response"
    at "/_framework/response.xqy";
    
-import module namespace model = "http://www.xquerrail-framework.com/model"
-   at "/_framework/model.xqy";
+import module namespace model-helper = "http://xquerrail.com/helper/model"
+   at "/_framework/helpers/model-helper.xqy";
 
-import module namespace domain = "http://www.xquerrail-framework.com/domain"
+import module namespace domain = "http://xquerrail.com/domain"
    at "/_framework/domain.xqy";
-   
-import module namespace json = "http://marklogic.com/json" 
-   at "/_framework/lib/mljson.xqy";
 
-import module namespace js = "http://www.xquerrail-framework.com/helper/javascript"
-   at "/_framework/helpers/javascript.xqy";
+import module namespace js = "http://xquerrail.com/helper/javascript"
+   at "/_framework/helpers/javascript-helper.xqy";
 
-import module namespace jsb = "http://www.xquerrail-framework.com/helper/json"
+import module namespace jsh = "http://xquerrail.com/helper/json"
     at "/_framework/helpers/json-helper.xqy";
 
-declare namespace tag = "http://www.xquerrail-framework.com/tag";  
+import module namespace json = "http://marklogic.com/xdmp/json"
+ at "/MarkLogic/json/json.xqy";
+ 
+declare namespace search = "http://marklogic.com/appservices/search";
+ 
+declare namespace tag = "http://xquerrail.com/tag";  
 
 declare default function namespace "http://www.w3.org/2005/xpath-functions";
 
@@ -48,7 +50,7 @@ declare variable $context := map:map();
 ~:)
 declare variable $custom-engine-tags as xs:QName*:= 
 (
-  fn:QName("engine","x-json")
+  fn:QName("engine","to-json")
 );
 (:Set your engines custom transformer:)
 declare variable $custom-transform-function := 
@@ -61,96 +63,149 @@ declare variable $custom-transform-function :=
  : and register your engine with the engine.base.xqy
 ~:)
 declare function engine:initialize($_response,$_request){ 
-(
-  let $init := 
-  (
-       response:initialize($_response),
-       request:initialize($_request),
-       xdmp:set($response,$_response),
-       engine:set-engine-transformer($custom-transform-function),
-       engine:register-tags($custom-engine-tags)
-  )
-  return
-   engine:render()
-)
+    (
+      let $init := 
+      (
+           response:initialize($_response),
+           request:initialize($_request),
+           engine:set-engine-transformer($custom-transform-function),
+           engine:register-tags($custom-engine-tags)
+      )
+      return
+       engine:render()
+    )
 };
 
 declare function engine:get-view-uri($response) {
    if(response:base()) 
-   then fn:concat("/_framework/base/views/base.",response:view(),".json.xqy")
+   then fn:concat("/_framework/base/views/base.",response:action(),".json.xqy")
    else fn:concat("/",request:application(),"/views/", request:controller(),"/",request:controller(), ".", response:view(),".json.xqy")
 };
 
-(:~
- : No need to use the views 
-~:)
-declare function engine:internal-render-view($response)
-{
-   if(engine:view-exists(engine:get-view-uri($response)))
-   then 
-   xdmp:invoke(
-       engine:get-view-uri($response),
-       (xs:QName("response"),$response)
-   ) else ()
+declare function engine:render-search-results($node) {
+    js:o((
+      js:entry("response",js:o((
+            js:kv("page",$node/@page),
+            js:kv("snippet_format",$node/@snippet-format),
+            js:kv("total",$node/@total),
+            js:kv("start",$node/@start),
+            js:kv("page_length",$node/@page-length),
+            js:entry("results",js:a(
+              for $result in $node/search:result
+              return
+                js:o((
+                   js:kv("index",$result/@index),
+                   js:kv("uri",$result/@uri),
+                   js:kv("path",$result/@start),
+                   js:kv("score",$result/@score),
+                   js:kv("confidence",$result/@confidence),
+                   js:kv("fitness",$result/@fitness),
+                   js:entry("metadata",js:o(
+                     for $meta in $result/search:metadata/*
+                     return
+                        js:kv(fn:local-name($meta),fn:data($meta))
+                   )),
+                   js:entry("snippets",js:a(
+                     for $snippet in $result/search:snippet
+                     return
+                        js:entry("matches",js:a(
+                           for $match in $snippet/node()
+                           return
+                             typeswitch($match)
+                               case element(search:match) return
+                                  js:o((
+                                    js:kv("path",$match/@path),
+                                    js:kv("text",$match/text())
+                                  ))
+                               case text() return $match
+                               default return ()
+                        ))
+                   ))
+                ))
+             )     
+         ),
+         (:Facets:)
+         js:entry("facets",js:a(
+            for $facet in $node/search:facet
+            return
+                js:entry("facet",js:o((
+                    js:kv("name",$facet/@name),
+                    js:kv("type",$facet/@type),
+                    js:entry("values",js:a(
+                        for $value in $facet/search:facet-value
+                        return js:o((
+                            js:kv("name",$value/@name),
+                            js:kv("count",$value/@count cast as xs:integer)
+                        
+                        ))
+                    ))
+                )))
+         )),
+         (:QText:)
+         js:entry("qtext",js:a(
+            for $qtext in $node/search:qtext
+            return
+              fn:string($qtext)
+         )),
+         (:QText:)
+         js:entry("query",js:a(
+            cts:query($node/search:query/node())
+         )),
+         (:Metrics:)
+         js:entry("metrics",js:o(
+            $node/search:metrics ! (
+                js:kv("query_time",./search:query-resolution-time),
+                js:kv("facet_time",./search:facet-resolution-time),
+                js:kv("snippet_time",./search:snippet-resolution-time),
+                js:kv("metadata_time",./search:metadata-resolution-time),
+                js:kv("total_time",./search:total_time)
+            )
+         ))
+      )
+    ))
+  ))
 };
-
-declare function engine:recursive-transform($node,$model)
-{
-    typeswitch($node)
-    case document-node() return 
-        <json type="object">{
-          for $n in $node/(attribute()|element())
-          return
-             engine:recursive-transform($n,$model)      
-        }</json>
-    case element() return
-       let $name  := fn:local-name($node)
-       let $field := $model//(domain:model|domain:element|domain:attribute)[fn:local-name(.) eq $name]
-       let $type  := if($field) then $field/@type else "string"
-       return 
-         if($type = ("string")) 
-         then element { attribute type{"string"}, fn:local-name($node) } {fn:data($node)}
-         else $node
-    default return ()      
-};
-
 declare function engine:render-json($node)
 {  
    let $is-listable := $node instance of element(list) 
    let $is-lookup   := $node instance of element(lookups)
+   let $is-searchable := $node instance of element(search:response)
    let $model := 
       if($is-listable or $is-lookup)
       then domain:get-domain-model($node/@type)
+      else if($is-searchable) then () 
       else domain:get-domain-model(fn:local-name($node)) 
    let $_ := xdmp:log(($model,"Body:::",xdmp:describe($node)),"debug")
    return
      if($is-listable and $model) then  
          js:o((       
-            js:pair("currentpage",$node/currentpage cast as xs:integer),
-            js:pair("pagesize",$node/pagesize cast as xs:integer),
-            js:pair("totalpages",$node/totalpages cast as xs:integer),
-            js:pair("totalrecords",$node/totalrecords cast as xs:integer),
-            js:na($node/@type,(
+            js:kv("_type",$node/@type cast as xs:integer),
+            js:kv("currentpage",$node/currentpage cast as xs:integer),
+            js:kv("pagesize",$node/pagesize cast as xs:integer),
+            js:kv("totalpages",$node/totalpages cast as xs:integer),
+            js:kv("totalrecords",$node/totalrecords cast as xs:integer),
+            js:e($node/@type,(
                for $n in $node/*[local-name(.) eq $model/@name]
                return 
-                   model:to-json($model,$n)
+                   model-helper:to-json($model,$n)
             ))
          ))
      else if($is-lookup) then
           js:o ((
-             js:na("lookups",
+             js:e("lookups",
              for $n in $node/*:lookup
              return js:o((
-                js:p("key",js:string($n/*:key)),
-                js:p("label",js:string($n/*:label))
+                js:kv("key",fn:string($n/*:key)),
+                js:kv("label",fn:string($n/*:label))
              )))
           ))     
-     
+     else if($is-searchable) then 
+        engine:render-search-results($node)
      else if($model) then (
-             model:to-json($model,$node)
+             model-helper:to-json($model,$node)
           )
      else (:fn:error(xs:QName("JSON-PROCESSING-ERROR"),"Cannot generate JSON response without model"):)
-        jsb:to-json($node)
+        jsh:to-json($node)
 };
 (:~
   Handle your custom tags in this method or the method you have assigned  
@@ -180,12 +235,17 @@ declare function engine:render()
      else xdmp:set-response-content-type("application/json"),  
      for $key in map:keys(response:response-headers())
      return xdmp:add-response-header($key,response:response-header($key)),
-     let $view := if(response:view()) then engine:internal-render-view($response) else ()
+     let $view-uri := engine:view-uri(response:controller(),(response:action(),response:view())[1],"json",fn:false())
+     let $view-uri := 
+        if(engine:view-exists($view-uri)) 
+        then $view-uri 
+        else  engine:view-uri(response:controller(),response:view(),"json",fn:false()) 
+     let $view := if($view-uri and engine:view-exists($view-uri)) then engine:render-view() else ()
      return 
-        if($view)
-        then if($view instance of element(json)) then json:xmlToJSON($view) else $view
+        if(fn:exists($view))
+        then  xdmp:to-json(if($view instance of json:object) then $view else json:object($view))
         else if(response:body()) 
-             then engine:render-json(response:body())
+             then xdmp:to-json(engine:render-json(response:body()))
         else ()
    )
 };

@@ -6,7 +6,7 @@ xquery version "1.0" encoding "UTF-8";
 (:~
  : The parser that was generated for the XQueryML10 grammar.
  :)
-module namespace p="http://www.xquerrail-framework.com/reflection";
+module namespace p="http://xquerrail.com/reflection";
 
 declare default function namespace "http://www.w3.org/2005/xpath-functions";
 

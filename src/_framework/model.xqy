@@ -2,10 +2,10 @@ xquery version "1.0-ml";
 (:~
  : Model model Application framework model functions
 ~:)
-module namespace model = "http://www.xquerrail-framework.com/model";
+module namespace model = "http://xquerrail.com/model";
 
-import module namespace js = "http://www.xquerrail-framework.com/helper/javascript" at "/_framework/helpers/javascript.xqy";
-import module namespace domain = "http://www.xquerrail-framework.com/domain" at "/_framework/domain.xqy";
+import module namespace js = "http://xquerrail.com/helper/javascript" at "/_framework/helpers/javascript.xqy";
+import module namespace domain = "http://xquerrail.com/domain" at "/_framework/domain.xqy";
 
 declare option xdmp:mapping "false";
 

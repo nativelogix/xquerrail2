@@ -1,6 +1,6 @@
  xquery version "1.0-ml";
 
-module namespace js = "http://www.xquerrail-framework.com/helper/javascript";
+module namespace js = "http://xquerrail.com/helper/javascript";
 declare default element namespace "http://www.w3.org/1999/xhtml";
 declare option xdmp:mapping "false";
 

@@ -3,9 +3,9 @@ xquery version "1.0-ml";
  : Module provides evaluation support to allow the creation 
  : of nodes in a seperate transaction context.
 ~:)
-module namespace eval = "http://www.xquerrail-framework.com/eval";
+module namespace eval = "http://xquerrail.com/eval";
 
-import module namespace domain = "http://www.xquerrail-framework.com/domain"
+import module namespace domain = "http://xquerrail.com/domain"
     at "/_framework/domain.xqy";
     
 declare option xdmp:mapping "false";
@@ -26,7 +26,7 @@ declare function eval-create(
    $collections as xs:string*   
 ) {
     let $stmt := '
-       import module namespace model = "http://www.xquerrail-framework.com/model/base"
+       import module namespace model = "http://xquerrail.com/model/base"
        at "/_framework/base/base-model.xqy";
        
        declare option xdmp:mapping "false";
@@ -79,7 +79,7 @@ declare function eval-update(
    $partial as xs:boolean   
 ) {
     let $stmt := '
-       import module namespace model = "http://www.xquerrail-framework.com/model/base"
+       import module namespace model = "http://xquerrail.com/model/base"
        at "/_framework/base/base-model.xqy";
        
        declare option xdmp:mapping "false";

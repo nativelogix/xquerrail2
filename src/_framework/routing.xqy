@@ -4,9 +4,9 @@ xquery version "1.0-ml";
  : Routing can be modified to support any router as long as it 
  : conforms to the routing.xsd.
 ~:)
-module namespace routing ="http://www.xquerrail-framework.com/routing";
+module namespace routing ="http://xquerrail.com/routing";
 
-import module namespace config = "http://www.xquerrail-framework.com/config"
+import module namespace config = "http://xquerrail.com/config"
 at "config.xqy";
 
 declare variable $routes := config:get-routes();
@@ -54,13 +54,18 @@ declare function get-route($url as xs:string)
   let $is-resource := $matching-route/@is-resource
   let $route := 
       if($is-resource eq "true") then
-          if($matching-route/routing:to)
-          then fn:concat($matching-route/(@to,routing:to)[1],"?",$params)
-          else if($matching-route/routing:replace) then
-               fn:concat(fn:replace($path,$matching-route/@path,$matching-route/routing:replace),"?",$params)
-          else if($matching-route/routing:prepend) then
-               fn:concat($matching-route/routing:prepend,$path,"?",$params)
-          else $path
+          let $resource-path := 
+              if($matching-route/routing:to)
+              then fn:concat($matching-route/(@to,routing:to)[1],"?",$params)
+              else if($matching-route/routing:replace) then
+                   fn:concat(fn:replace($path,$matching-route/@path,$matching-route/routing:replace),"?",$params)
+              else if($matching-route/routing:prepend) then
+                   fn:concat($matching-route/routing:prepend,$path,"?",$params)
+              else $path
+          return 
+            if(config:resource-handler()) 
+            then fn:concat(config:resource-handler()/@resource,"?_url=",$resource-path,if($params ne "") then fn:concat("&amp;",$params) else ())
+            else $resource-path
       else if($matching-route) then
             let $controller := $matching-route/routing:default[@key eq "_controller"]
             let $parts      := fn:tokenize(fn:normalize-space($controller),":")
