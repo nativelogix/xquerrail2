@@ -436,6 +436,7 @@ declare function model:get(
     let $id-value   := fn:data((for $k in $id-fields return map:get($params, $k))[1])
     let $name := fn:data($domain-model/@name)
     let $nameSpace := domain:get-field-namespace($domain-model)
+    let $idns := domain:get-field-namespace($id-field-def)
     let $stmt := 
       fn:normalize-space(fn:string(
       <stmt>cts:search({
@@ -457,9 +458,9 @@ declare function model:get(
             },
             cts:or-query((
                if($id-field-def instance of element(domain:element))
-               then cts:element-range-query(fn:QName("{$nameSpace}","{$id-field}"),"=","{$id-value}")
+               then cts:element-range-query(fn:QName("{$idns}","{$id-field}"),"=","{$id-value}")
                else if($id-field-def instance of element(domain:attribute))
-                    then cts:element-attribute-range-query(fn:QName("{$nameSpace}","{$name}"),fn:QName("","{$id-field}"),"=","{$id-value}")
+                    then cts:element-attribute-range-query(fn:QName("{$idns}","{$name}"),fn:QName("","{$id-field}"),"=","{$id-value}")
                     else ()
             )), ("filtered"))
         </stmt>))
