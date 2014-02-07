@@ -1,0 +1,21 @@
+{
+  "name": "xquerrail2",
+  "version": "0.0.0",
+  "description": "xquerrail2\r ==========",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rlouapre/xquerrail2.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rlouapre/xquerrail2/issues"
+  },
+  "homepage": "https://github.com/rlouapre/xquerrail2",
+  "devDependencies": {
+    "grunt": "~0.4.2",
+    "grunt-contrib-watch": "~0.5.3",
+    "grunt-contrib-jshint": "~0.8.0",
+    "request": "~2.33.0"
+  }
+}
