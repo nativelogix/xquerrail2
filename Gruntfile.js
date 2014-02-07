@@ -15,6 +15,7 @@ module.exports = function(grunt) {
 
   // Project configuration.
   grunt.initConfig({
+    env: grunt.file.readJSON("env.json"),
     jshint: {
       all: [
         'Gruntfile.js',
@@ -35,7 +36,7 @@ module.exports = function(grunt) {
     },
     refresh_cache: {
       all: {
-        url: 'http://localhost:8050/initialize.xqy'
+        url: '<%= env.url %>/initialize.xqy'
       }
     }
   });
