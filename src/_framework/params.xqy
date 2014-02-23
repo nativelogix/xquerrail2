@@ -2,7 +2,7 @@ xquery version "1.0-ml";
 
 (:~
  : Utility library for building parameter maps
-~:)
+ :)
 module namespace params = "http://xquerrail.com/params";
 
 declare variable $PARAMS as map:map := map:map();
@@ -10,7 +10,7 @@ declare variable $PARAMS as map:map := map:map();
 (:~
  : Sets the params based on an existing map:map
  : @param $param  - map:map to load into param context
-~:)
+ :)
 declare function load($params as map:map) {
    xdmp:set($PARAMS,$params)
 };
@@ -20,7 +20,7 @@ declare function params() {
 };
 (:~
  : Creates a single value key map
-~:)
+ :)
 declare function param($key as xs:string,$value as item()*)
 {
    let $map := map:map()
@@ -32,7 +32,7 @@ declare function param($key as xs:string,$value as item()*)
 
 (:~
    Joins all the parameter maps together
-~:)
+ :)
 declare function new($values as map:map*)
 {
    let $output := map:map()

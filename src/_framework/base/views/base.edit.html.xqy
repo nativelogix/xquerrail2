@@ -1,7 +1,7 @@
 xquery version "1.0-ml";
 (:~
  : Base Edit Template used for rendering output
-~:)
+ :)
 declare default element namespace "http://www.w3.org/1999/xhtml";
 
 import module namespace form     = "http://xquerrail.com/helper/form" at "/_framework/helpers/form-helper.xqy";

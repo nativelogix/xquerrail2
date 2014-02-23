@@ -2,7 +2,7 @@ xquery version "1.0-ml";
 (:~
  : Builds a instance of an element based on a domain:model
  : Provides a caching mechanism to optimize speedup of calling builder functions.
-~:)
+ :)
 module namespace builder = "http://xquerrail.com/builder";
 
 import module namespace domain  ="http://xquerrail.com/domain"
@@ -137,7 +137,7 @@ declare function builder:build($field as element()) {
 : Builds a static reference query for a field
 : @param $domain-model the model of the document
 : @return the document
-~:) 
+ :) 
 declare function builder:build-reference(
    $field as element()
 ) as xs:string {    
@@ -300,7 +300,7 @@ declare function builder:monthDay($field,$params,$current) {
  : Resolves references based on selector pattern
  : {application}:{model}:{function}
  : application:model:{function}
-~:)
+ :)
 declare function builder:reference($field as element(),$params as map:map,$current as node()?) {
     let $references :=
         for $ref in builder:reference-resolve($field,$params)
@@ -316,7 +316,7 @@ declare function builder:reference($field as element(),$params as map:map,$curre
 };
 (:~
  :  Resolves the reference type and calls the appropriate reference functions
-~:)
+ :)
 declare function builder:reference-resolve($field as element(), $params as map:map) {
     let $refTokens := fn:tokenize(fn:data($field/@reference), ":")
     let $element := element {$refTokens[1]} { $refTokens[1] }
@@ -334,7 +334,7 @@ declare function builder:reference-resolve($field as element(), $params as map:m
  : a reference between two models types.
  : @param $reference is the reference element that is used to contain the references
  : @param $params the params items to build the relationship
-~:)
+ :)
  declare function builder:reference-model($field as element(), $params as map:map)
  as element()* 
  {
@@ -365,7 +365,7 @@ declare function builder:reference-resolve($field as element(), $params as map:m
 : @param $domain-model the model of the document
 : @param $params the values to pull the id from
 : @return the document
-~:) 
+ :) 
 declare function builder:reference-value(
    $domain-model as element(domain:model), 
    $params as map:map
@@ -416,7 +416,7 @@ declare function builder:reference-value(
 };
 (:~
  :
-~:)
+ :)
 declare  function builder:reference-application($field,$params){
    let $reference := fn:data($field/@reference)
    let $ref-tokens := fn:tokenize($reference,":")
@@ -531,7 +531,7 @@ declare function builder:point($field,$params,$current) {
 (:~
  : Builds an XPath Expression to get field definition from a given model. 
  : Relative to the model parent
-~:) 
+ :) 
 declare function builder:get-field-path(
    $field as element()
 ) {

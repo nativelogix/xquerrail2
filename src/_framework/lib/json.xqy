@@ -697,7 +697,7 @@ declare function p:parse-json($s as xs:string) as item()*
 (:~
  : Recursively converts Parse Tree into XML representation of json object
  :
-~:)
+ :)
 (:
 declare function p:_parse($node as node())
 {
@@ -783,7 +783,7 @@ declare  function p:clean($string)
 
 (:~
  : Converts JSON to XML
-~:)
+ :)
 declare function p:parse($input as xs:string)
 {
    let $parse := p:parse-json($input)

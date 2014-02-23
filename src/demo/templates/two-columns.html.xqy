@@ -6,15 +6,10 @@ declare default element namespace "http://www.w3.org/1999/xhtml";
     <!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
         <?template name="head"?>
         <body>
-            <!--[if lt IE 7]>
-                <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
-                <![endif]-->
-            
-            <!-- This code is taken from http://twitter.github.com/bootstrap/examples/hero.html -->
             <?template name="nav"?>
             <div class="container-fluid">
-                <div class="row-fluid">
-                    <div class="span2">
+                <div class="row">
+                    <div class="offset1 span2">
                         <?slot name="sidebar"?>
                           <?template name="sidebar"?>
                         <?endslot?>
@@ -29,4 +24,4 @@ declare default element namespace "http://www.w3.org/1999/xhtml";
             <?template name="scripts"?>
     </body>
     </html>
-</template>/(comment()|node())
+</template>/node()

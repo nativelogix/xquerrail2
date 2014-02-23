@@ -184,12 +184,16 @@
         </element>
     </model> 
     <model name="apidoc" key="uuid" keyLabel="title" persistence="directory" label="Document" extends="base">
-        <directory>/docs/</directory>
+        <directory>/apidocs/</directory>
         <element name="link" type="string" label="Link"></element>
         <element name="header" type="string" label="Header Before"></element>
         <element name="order" type="integer" label="List Order"></element>
         <element name="title" type="string" label="Title"></element>
+        <element name="location" type="string" label="Location"></element>
+        <element name="namespace" type="string" label="Namespace"></element>
+        <element name="moduleType" type="string" label="Module Type"></element>
         <element name="xqdoc" type="schema-element" label="Documentation">
+            <navigation listable="false"/>
             <ui type="textarea" class="prettyprint"/>
         </element>
     </model>

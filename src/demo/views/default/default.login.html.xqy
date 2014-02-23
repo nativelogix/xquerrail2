@@ -4,6 +4,7 @@
             <div id="myTabContent" class="tab-content">
                 <div class="tab-pane active in" id="login">
                     <form class="form-horizontal" action="/login.html" method="POST">
+                        <input type='hidden' name="returnUrl" value="{xdmp:get-request-field("returnUrl")}"/>
                         <fieldset>
                             <div id="legend">
                                 <legend class="">Login</legend>

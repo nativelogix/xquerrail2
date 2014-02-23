@@ -1,9 +1,9 @@
 xquery version "1.0-ml";
 (:~
- : Provides Regex Routing support using Regex Routing Module
- : Routing can be modified to support any router as long as it 
- : conforms to the routing.xsd.
-~:)
+ : Provides Routing Module for allowing URL mapping to controllers and resources.
+ : The entry module for the xquerrail rewriter will call the get-route method which returns 
+ : a string of the rewritten url.
+ :)
 module namespace routing ="http://xquerrail.com/routing";
 
 import module namespace config = "http://xquerrail.com/config"
@@ -13,7 +13,7 @@ declare variable $routes := config:get-routes();
 
 (:~
  : Function returns if a given route is valid according to schema definition
-~:)
+ :)
 declare function route-valid($route as element(routing:route))
 {
   fn:true()
@@ -21,7 +21,7 @@ declare function route-valid($route as element(routing:route))
 
 (:~
  : Converts a list of map values to a parameter string
-~:)
+ :)
 declare function map-to-params($map as map:map)
 {
   fn:string-join(
@@ -37,7 +37,7 @@ declare function map-to-params($map as map:map)
 (:~
  : Returns the default route for a given url
  : @param $url - Url to find the matching route.
-~:)
+ :)
 declare function get-route($url as xs:string)
 {
   let $params-map := map:map()

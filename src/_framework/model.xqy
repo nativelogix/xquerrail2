@@ -1,7 +1,7 @@
 xquery version "1.0-ml";
 (:~
  : Model model Application framework model functions
-~:)
+ :)
 module namespace model = "http://xquerrail.com/model";
 
 import module namespace js = "http://xquerrail.com/helper/javascript" at "/_framework/helpers/javascript.xqy";
@@ -17,7 +17,7 @@ declare variable $NL as xs:string :=
 (:~
  :  Does an update by iterating the element structure and looking for named element 
  :  by local-name and updating it with a new value
-~:)
+ :)
 declare function model:update-partial($current as element(), $update as map:map)
 {  
    let $cur-map := $update

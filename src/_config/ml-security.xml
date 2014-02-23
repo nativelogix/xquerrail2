@@ -8,12 +8,6 @@
     <scope context="demo:default:logout">
         <deny-role>anonymous</deny-role>
     </scope>
-    <scope context="demo:default:*">
-        <allow-role>*</allow-role>
-    </scope>
-    <scope context="demo:docs:*">
-        <allow-role>*</allow-role>
-    </scope>
     <scope context="*">
         <deny-role>anonymous</deny-role>
     </scope>

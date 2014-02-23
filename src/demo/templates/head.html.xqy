@@ -41,4 +41,5 @@ declare default element namespace "http://www.w3.org/1999/xhtml";
     <?javascript-include "_framework"?>
     <?javascript-include "main"?>
     <?controller-stylesheet?>
+    <?controller-script?>
 </head>

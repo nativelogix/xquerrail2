@@ -25,10 +25,9 @@ declare variable $context := map:map();
 
 (:~
  : Custom Tags the HTML Engine renders and handles during transform
-~:)
+ :)
 declare variable $engine-tags := 
 (  
-
      xs:QName("engine:title"),
      xs:QName("engine:include-metas"),
      xs:QName("engine:include-http-metas"),
@@ -46,7 +45,7 @@ declare variable $engine-tags :=
 
 (:~
  : Initialize the engine passing the request and response for the given object.
-~:)
+ :)
 declare function engine:initialize($resp,$req){ 
     (
       let $init := 
@@ -62,7 +61,7 @@ declare function engine:initialize($resp,$req){
 };
 (:~
  : Some Common settings for html 
-~:)
+ :)
 declare variable $html-strict :=        '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">';
 declare variable $html-transitional :=  '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
 declare variable $html-frameset :=      '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">';
@@ -73,7 +72,7 @@ declare variable $xhtml-1.1 :=          '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTM
 
 (:~
  : Returns a <meta/> element for use in http header
-~:)
+ :)
 declare function engine:transform-include_metas($node as node())
 {
   response:metas()
@@ -81,7 +80,7 @@ declare function engine:transform-include_metas($node as node())
 
 (:~
  :  Renders out HTTP meta elements to header
-~:)
+ :)
 declare function engine:transform-http_metas($node as node())
 {
   response:httpmetas()
@@ -90,7 +89,7 @@ declare function engine:transform-http_metas($node as node())
 (:~
  : Custom Tag for rendering Label or Title of Controller.  This is set using the
  : response:set-title("MY Title") function during controller invocation
-~:)
+ :)
 declare function engine:transform-title($node as node())
 {
    response:title()
@@ -102,7 +101,7 @@ declare function engine:transform-title($node as node())
  : Generates a script element for the given controller.  If a controller 
  : script is defined in the template the system will check to see if the
  : file exists on the system before rendering any output
-~:)
+ :)
 declare function engine:transform-controller-script($node)
 {
   let $script-directory := config:application-script-directory(response:application())
@@ -121,7 +120,7 @@ declare function engine:transform-controller-script($node)
  : Generates a script element for the given controller.  If a controller 
  : script is defined in the template the system will check to see if the
  : file exists on the system before rendering any output
-~:)
+ :)
 declare function engine:transform-controller-stylesheet($node)
 {
   let $stylesheet-directory := config:application-stylesheet-directory(response:application())
@@ -141,7 +140,7 @@ declare function engine:transform-controller-stylesheet($node)
  : Generates a script element for the given controller.  If a controller 
  : script is defined in the template the system will check to see if the
  : file exists on the system before rendering any output
-~:)
+ :)
 declare function engine:transform-javascript-include($node)
 {
   let $script-directory := config:resource-directory() 
@@ -168,7 +167,7 @@ declare function engine:transform-javascript-include($node)
  : Generates a script element for the given controller.  If a controller 
  : script is defined in the template the system will check to see if the
  : file exists on the system before rendering any output
-~:)
+ :)
 declare function engine:transform-stylesheet-include($node)
 {
   let $resource := fn:data($node) ! fn:replace(.,"&quot;","") ! fn:normalize-space(.)
@@ -189,6 +188,9 @@ declare function engine:transform-stylesheet-include($node)
           }
   else fn:error(xs:QName("INCLUDE-ERROR"),"Invalid path:" || $stylesheet-uri)
 };
+(:~
+ :  Creates 
+ :)
 declare function engine:transform-image-tag($node)
 {
   let $resource := fn:data($node) ! fn:replace(.,"&quot;","") ! fn:normalize-space(.)
@@ -196,9 +198,11 @@ declare function engine:transform-image-tag($node)
   let $image-uri := 
   fn:concat(
         $image-directory,
-        if(fn:ends-with($image-directory,"/")) then () else "/",
-        "images/",
-        $resource,".css")
+        if(fn:ends-with($image-directory,"/")) 
+        then () 
+        else "/",
+        config:resource-directory(),
+        $resource)
    return 
   if(engine:module-file-exists($image-uri))  
   then element img {
@@ -211,7 +215,7 @@ declare function engine:transform-image-tag($node)
  : Generates a script element for the given controller.  If a controller 
  : script is defined in the template the system will check to see if the
  : file exists on the system before rendering any output
-~:)
+ :)
 declare function engine:transform-resource-include($node)
 {
   let $resource := fn:data($node) ! fn:replace(.,"&quot;","") ! fn:normalize-space(.)
@@ -240,13 +244,14 @@ declare function engine:transform-resource-include($node)
          default return fn:error(xs:QName("UNKNOWN-RESOURCE"),"Unknown Resource Error")  
 };
 (:~
- :  Returns a list of controllers as a unordered list.
+ :  Returns a `<ul><li>` list of controllers and their corresponding links
  :  This can be used during app generation to quickly test
  :  New controllers. 
  :)
 declare function engine:transform-controller-list($node)
 {
    let $attributes := xdmp:value(fn:concat("<attributes ", fn:data($node),"/>"))
+   let $base-uri := ($attributes/@base,"/")[1]
    return
    <ul>{
    if($attributes/@uiclass) then attribute class {$attributes/@uiclass} else (),
@@ -257,17 +262,18 @@ declare function engine:transform-controller-list($node)
         return
           <li>
             {if($attributes/@itemclass) then attribute class {$attributes/@itemclass} else ()}
-            <a href="/{$controller/@name}/index.html">{(fn:data($controller/@label),fn:data($controller/@name))[1]}</a>
+            <a href="/{$base-uri}/{$controller/@name}/index.html">{(fn:data($controller/@label),fn:data($controller/@name))[1]}</a>
           </li>   
    else 
         for $controller in domain:get-controllers(request:application())
         return
           <li>
             {if($attributes/@itemclass) then attribute class {$attributes/@itemclass} else ()}
-            <a href="/{$controller/@name}/index.html">{(fn:data($controller/@label),fn:data($controller/@name))[1]}</a>
+            <a href="/{$base-uri}/{$controller/@name}/index.html">{(fn:data($controller/@label),fn:data($controller/@name))[1]}</a>
           </li>
    }</ul>
 };
+
 (:~
  :  Returns a list of controllers as a unordered list.
  :  This can be used during app generation to quickly test
@@ -293,26 +299,26 @@ declare function engine:transform-controller-link($node) {
 (:~
  : Custom Transformer handles HTML specific templates and
  : Tags.
-~:)
+ :)
 declare function engine:custom-transform($node as node())
 {  
    if(engine:visited($node))
    then  ()    
    else(
        typeswitch($node)
-         case processing-instruction("title") return engine:transform-title($node)
+         case processing-instruction("title")              return engine:transform-title($node)
          case processing-instruction("include-http-metas") return engine:transform-http_metas($node)
-         case processing-instruction("include-metas") return engine:transform-include_metas($node)
+         case processing-instruction("include-metas")      return engine:transform-include_metas($node)
          case processing-instruction("javascript-include") return engine:transform-javascript-include($node)
          case processing-instruction("stylesheet-include") return engine:transform-stylesheet-include($node)
-         case processing-instruction("resource-include") return engine:transform-resource-include($node)
-         case processing-instruction("image-tag") return engine:transform-image-tag($node)
-         case processing-instruction("controller-script") return engine:transform-controller-script($node)
+         case processing-instruction("resource-include")   return engine:transform-resource-include($node)
+         case processing-instruction("image-tag")          return engine:transform-image-tag($node)
+         case processing-instruction("controller-script")  return engine:transform-controller-script($node)
          case processing-instruction("controller-stylesheet") return engine:transform-controller-stylesheet($node)
-         case processing-instruction("controller-list") return engine:transform-controller-list($node)
-         case processing-instruction("controller-link") return engine:transform-controller-link($node)
-         case processing-instruction("flash-message") return engine:transform-flash-message($node)
-         case processing-instruction() return engine:transform($node)   
+         case processing-instruction("controller-list")    return engine:transform-controller-list($node)
+         case processing-instruction("controller-link")    return engine:transform-controller-link($node)
+         case processing-instruction("flash-message")      return engine:transform-flash-message($node)
+         case processing-instruction()                     return engine:transform($node)   
          default return engine:transform($node)
      )    
 };
@@ -321,7 +327,7 @@ declare function engine:custom-transform($node as node())
  : The redirector will try to ensure a valid route is defined to handle the request
  : If the redirect does not map to an existing route then 
  : will throw invalid redirect error.
-~:)
+ :)
 declare function engine:redirect($path)
 {
      let $controller := response:controller()
@@ -338,8 +344,8 @@ declare function engine:redirect($path)
         else fn:error(xs:QName("INVALID-REDIRECT"),"No valid Routes")
 };
 (:~
- : Renders the HTML response.
-~:)
+ : Renders the HTML response and adds response information such as headers and response codes.
+ :)
 declare function engine:render()
 {
    if(response:redirect()) 

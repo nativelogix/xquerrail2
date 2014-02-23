@@ -23,7 +23,7 @@ declare option xdmp:output "method=xml";
 
 (:~
  : You initialize your variables
-~:)
+ :)
 declare variable $request := map:map() ;
 declare variable $response := map:map();
 declare variable $context := map:map();
@@ -31,7 +31,7 @@ declare variable $context := map:map();
 (:~
    Initialize  Any custom tags your engine handles so the system can call 
    your custom transform functions
-~:)
+ :)
 declare variable $custom-engine-tags as xs:QName*:= 
 (
   fn:QName("engine","to-xml")
@@ -43,7 +43,7 @@ declare variable $custom-transform-function := (
 (:~
  : The Main Controller will call your initialize method
  : and register your engine with the engine.base.xqy
-~:)
+ :)
 declare function engine:initialize($_response,$_request){ 
 (
   let $init := 
@@ -69,7 +69,7 @@ declare function engine:render-xml()
   initialized with the base.engine
   It is important that you only handle your custom tags and
   any content that is required to be consumed by your tags
-~:)
+ :)
 declare function engine:custom-transform($node as item())
 {  
    $node
@@ -79,7 +79,7 @@ declare function engine:custom-transform($node as item())
  : From this point it is up to your engine to handle 
  : to initialize any specific response settings and
  : and start the rendering process 
-~:)
+ :)
 declare function engine:render()
 {
    if(response:redirect()) 

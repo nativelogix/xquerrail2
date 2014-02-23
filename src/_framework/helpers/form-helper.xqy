@@ -42,7 +42,7 @@ declare function form:mode($mode as xs:string) {
 };
 (:~
  : 
-~:)
+ :)
 declare function form:get-field-name($field as node()) {
     domain:get-field-id($field)  
 };
@@ -308,7 +308,7 @@ declare function form:values($field,$value)
  : Formats : 
  :   (application):(helper|model|tag):function-name($field,$value)
  :   The method should take a field and value
-~:)
+ :)
 declare function form:custom($field,$value)
 {
   let $renderer := $field/domain:ui/@renderer
@@ -323,7 +323,7 @@ declare function form:custom($field,$value)
 (:~
  : Function binds controls to their respective request data 
  : from the request map;
-~:)
+ :)
 declare function form:text($field,$value)
 {
   <div class="control-group">{
@@ -355,7 +355,7 @@ declare function form:text($field,$value)
 };
 (:~
  : Renders a list of radio boxes 
-~:)
+ :)
 declare function form:list($field,$value) {
     let $type as xs:string := ($field/domain:ui/@type,$field/@type)[1]
     let $ui-type := 
@@ -393,7 +393,7 @@ declare function form:list($field,$value) {
 };
 (:~
  : Renders a value as a checkbox
-~:)
+ :)
 declare function form:checkbox-value(
 $field as element(),
 $mode as xs:string,
@@ -577,7 +577,7 @@ declare function form:date($field,$value)
 (:~
  : Function binds controls to their respective request data 
  : from the request map;
-~:)
+ :)
 declare function form:dateTime($field,$value)
 {
   <div class="control-group">{
@@ -664,7 +664,7 @@ declare function form:binary-content-type-icon($value) {
 };
 (:~
  : Returns a url reference for binary instance  
-~:)
+ :)
 declare function form:binary-url($field,$value) {
   let $model := $field/ancestor::domain:model
   let $application := response:application()
@@ -909,7 +909,7 @@ declare function form:reference($field,$value) {
 (:~
  : Creates a grid column specification to be used in jqgrid control.
  :
-~:)
+ :)
 declare function form:field-grid-column(
   $field as element()
 ) {
@@ -959,7 +959,7 @@ declare function form:field-grid-column(
 (:~
  :    Assigns validation constraints to input 
  :    Assumes the use of bassistance.de jquery.validation.js
-~:)
+ :)
 declare function form:build-validation($model) {
   js:o((
     js:e("rules",(
@@ -982,7 +982,7 @@ declare function form:build-validation($model) {
 
 (:~
  : Builds a javascript context object that can be used to drive navigation
-~:)
+ :)
 declare function form:context(
    $response as map:map
 ) {(

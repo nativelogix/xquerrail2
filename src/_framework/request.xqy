@@ -3,7 +3,7 @@ xquery version "1.0-ml";
 (:~
  : This request controls all serialization of request map 
  : - All HTTP request elements in a single map:map type.
-~:)
+ :)
 module namespace request = "http://xquerrail.com/request";
 
 import module namespace mljson  = "http://marklogic.com/xdmp/json" at "/MarkLogic/json/json.xqy";
@@ -49,7 +49,7 @@ declare private variable $ERROR-CODE        := "request:error-code";
 declare private variable $ERROR-MESSAGE     := "request:error-message";
 declare private variable $SYS-PARAMS := ("_application","_controller","_action","_view","_context","_format","_url","_route","_partial","_debug");
 
-(:~Global Request Variable ~:)
+(:~Global Request Variable  :)
 declare private variable $request as map:map := 
  let $init := map:map()
  return (
@@ -59,14 +59,14 @@ declare private variable $request as map:map :=
 
 (:~
  : Decodes a binary request into string
-~:)
+ :)
 declare function request:hex-decode($hexBin as xs:hexBinary) as xs:string {
     request:hex-decode($hexBin, fn:floor(fn:string-length(fn:string($hexBin)) div 2))
 };
 
 (:~
  : Binary Decoder used for 4.1x before xdmp:binary-decode()
-~:)
+ :)
 declare function request:hex-decode($hexBin as xs:hexBinary, $length as xs:integer) as xs:string {
     let $string := fn:substring(fn:string($hexBin),1,$length * 2)
     let $bytes as xs:integer* :=
@@ -83,7 +83,7 @@ declare function request:hex-decode($hexBin as xs:hexBinary, $length as xs:integ
 
 (:~
  : Returns the map:map of the request
-~:)
+ :)
 declare function request:request()
 {
   $request
@@ -91,7 +91,7 @@ declare function request:request()
 
 (:~
  : Joins a request map with another request-map
-~:)
+ :)
 declare function request:joinx($params as map:map)
 {
    let $_ := xdmp:set($request, $request + ($request - $params) )
@@ -105,7 +105,7 @@ declare function request:joinx($params as map:map)
  :      request:header::xxxx
  :      request:param::xxxx
  :      request:body
-~:)
+ :)
 declare function request:initialize($_request as map:map) {
   xdmp:set($request:request, $_request + $request:request)
 };
@@ -113,7 +113,7 @@ declare function request:initialize($_request as map:map) {
 
 (:~
  :  Parses the map pulling all the required information from http request 
-~:)
+ :)
 declare function request:parse($parameters) as map:map {
    
    (:Insert all custom headers:)
@@ -197,42 +197,42 @@ declare function request:parse($parameters) as map:map {
 
 (:~
  : Get the application from the request
-~:)
+ :)
 declare function request:application(){
   map:get($request,$APPLICATION)
 };
 
 (:~
  :  Gets the controller from the request
-~:)
+ :)
 declare function request:controller() {
     map:get($request,$CONTROLLER)
 };
 
 (:~
  :  Gets that action Parameters of the request
-~:)
+ :)
 declare function request:action() {
     map:get($request,$ACTION)
 };
 
 (:~
  : Selects the file format of the requestt
-~:)
+ :)
 declare function request:format() {
    map:get($request,$FORMAT)
 };
 
 (:~
  : Gets the route selected for the request
-~:)
+ :)
 declare function request:route() {
    map:get($request,$ROUTE)
 };
 
 (:~
  : Gets the view selected for the request
-~:)
+ :)
 declare function request:view() {
    map:get($request,$VIEW)
 };
@@ -241,7 +241,7 @@ declare function request:origin() {
 };
 (:~
  : Returns if the request has been past the debug option
-~:)
+ :)
 declare function request:debug() {
   map:get($request,$DEBUG) eq "true"
 };
@@ -252,21 +252,21 @@ declare function request:url() {
  : Returns the method for a given request
  : the method returns the http verb such as POST,GET,DELETE
  : etc.
-~:)
+ :)
 declare function request:method() {
     map:get($request,$METHOD)
 };
 
 (:~
  :  Get the original Path of the request
-~:)
+ :)
 declare function request:path() {
     map:get($request,$PATH)
 };
 
 (:~
  :  Get the protocal of the request
-~:)
+ :)
 declare function request:protocol() {
     map:get($request,$PROTOCOL)
 };
@@ -274,21 +274,21 @@ declare function request:protocol() {
 (:~
  : Returns the body element of an http:request. Use the request:body-type() 
  : function to determine the underlying datatype
-~:)
+ :)
 declare function request:body() {
     map:get($request,$BODY)
 };
 
 (:~
  :  Returns the body type of the given request such as (xml, binary, text) 
-~:)
+ :)
 declare function request:body-type(){
     map:get($request,$BODY-TYPE)
 };
 
 (:~
  : Returns if a request is a partial request common in ajax calls
-~:)
+ :)
 declare function request:partial(){
   let $is-partial := map:get($request,$PARTIAL)
   return
@@ -302,7 +302,7 @@ declare function request:partial(){
 
 (:~
  :  Returns the list of parameters of just parameters in a map
-~:)
+ :)
 declare function request:params()  as map:map{
     let $new-map := map:map()
     let $_ := 
@@ -323,7 +323,7 @@ declare function request:params()  as map:map{
 
 (:~
  : Returns a list parameter names from request as sequence of string values
-~:)
+ :)
 declare function request:param-names()
 {
     for $key in map:keys($request)[fn:starts-with(.,$PARAM-PREFIX)]
@@ -332,7 +332,7 @@ declare function request:param-names()
 
 (:~
  :  Gets a parameter value by name
-~:)
+ :)
 declare function request:param($name as xs:string) {
    let $key-name := fn:concat($PARAM-PREFIX,$name)
    return 
@@ -352,7 +352,7 @@ declare function request:params-to-querystring(){
 (:~
  : Retrieves a field if it is available and returns.
  : If field does not exist returns default.
-~:)
+ :)
 declare function request:param($name as xs:string,$default as item()*) {
   let $field := request:param($name) 
   return
@@ -363,7 +363,7 @@ declare function request:param($name as xs:string,$default as item()*) {
 (:~
  : Returns a parameter casted as the type you specify.
  : Use the generic type of the asset to resolve as the underlying type
-~:)
+ :)
 declare function request:param-as(
     $name as xs:string,
     $type as xs:string,
@@ -397,7 +397,7 @@ declare function request:param-as(
 
 (:~
  :  Returns the parameters of the request as a map
-~:)
+ :)
 declare function request:params-as-map()
 {
    let $new-map := map:map()
@@ -413,7 +413,7 @@ declare function request:params-as-map()
 
 (:~
  :  Returns the filename for the param
-~:)
+ :)
 declare function request:param-filename($name as xs:string) {
     map:get($request,fn:concat($PARAM-FILENAME-PREFIX,$name))
 };
@@ -421,7 +421,7 @@ declare function request:param-filename($name as xs:string) {
  :  Returns the associated content-type for the given param
  :  In cases where the request has multipart/mime data on the form
  :  you can extract the type based request from client
-~:)
+ :)
 declare function request:param-content-type(
     $field as xs:string
 )
@@ -431,7 +431,7 @@ declare function request:param-content-type(
 
 (:~
  : Gets a all response header object
-~:)
+ :)
 declare function request:get-headers() {
     let $new-map := map:map()
     let $_ := 
@@ -445,7 +445,7 @@ declare function request:get-headers() {
 (:~
  : Gets a specific header parameter by name 
  :  @param $name - Name of the header parameter (ie. Content-Length)
-~:)
+ :)
 declare function request:get-header($name as xs:string) {
    let $key-name := fn:concat($HEADER-PREFIX,$name)
    return 
@@ -456,7 +456,7 @@ declare function request:get-header($name as xs:string) {
  :  Gets a specific header parameter by name and its default value if not present
  :  @param $name - Name of the header parameter (ie. Content-Length)
  :  @param $defualt - Default value if header parameter is not present.
-~:)
+ :)
 declare function request:get-header($name as xs:string,$default as xs:anyAtomicType) {
   if(request:get-header($request,$name))
   then request:get-header($request,$name)
@@ -467,21 +467,21 @@ declare function request:get-header($name as xs:string,$default as xs:anyAtomicT
 
 (:~
  : Returns the given Accept-Language from the HTTP request
-~:)
+ :)
 declare function request:locale()
 {
   map:get($request,fn:concat($HEADER-PREFIX,"Accept-Language"))
 };
 (:~
  : Returns the Content-Length header param
-~:)
+ :)
 declare function request:content-length()
 { 
    map:get($request,fn:concat($HEADER-PREFIX,"Content-Length"))
 };
 (:~
  : Returns the User-Agent header from a given request
-~:)
+ :)
 declare function request:user-agent()
 {
   map:get($request,fn:concat($HEADER-PREFIX,"User-Agent"))
@@ -489,7 +489,7 @@ declare function request:user-agent()
 
 (:~
  : Returns the Referer header from a given request
-~:)
+ :)
 declare function request:referer()
 {
   map:get($request,fn:concat($HEADER-PREFIX,"Referer"))  
@@ -497,7 +497,7 @@ declare function request:referer()
 
 (:~
  : Returns the Accept-Encoding header from a given request
-~:)
+ :)
 declare function request:encoding()
 {
     map:get($request,fn:concat($HEADER-PREFIX,"Accept-Encoding"))  
@@ -505,21 +505,21 @@ declare function request:encoding()
 
 (:~
  : Returns the Connection header from a given request
-~:)
+ :)
 declare function request:connection()
 {
     map:get($request,fn:concat($HEADER-PREFIX,"Connection"))  
 };
 (:~
  : Returns the Authorization Header from the request
-~:)
+ :)
 declare function request:authorization()
 {
     map:get($request,fn:concat($HEADER-PREFIX,"Authorization"))  
 };
 (:~
  : Returns the Cookies from the request
-~:)
+ :)
 declare function request:cookies()
 {
     map:get($request,fn:concat($HEADER-PREFIX,"Cookie"))     
@@ -528,7 +528,7 @@ declare function request:cookies()
 (:~
  : Returns the Cookies by name from the request
  : @param $name - name of cookie
-~:)
+ :)
 
 declare function request:cookie($name)
 {
@@ -544,7 +544,7 @@ declare function request:content-type() {
 
 (:~
  : Returns the current user-id for the request
-~:)
+ :)
 declare function request:user-id()
 {
    map:get($request,$USERID)
@@ -552,14 +552,14 @@ declare function request:user-id()
 
 (:~ 
  : Returns the current user name 
-~:)
+ :)
 declare function request:user-name() {
    map:get($request,$USERNAME)
 };
 
 (:~
  : Returns the anonymous users name
-~:)
+ :)
 declare function request:anonymous-user()
 {
   config:anonymous-user(request:application())
@@ -569,7 +569,7 @@ declare function request:anonymous-user()
 (:----Query Constructs----:)
 (:~
  : Converts a JSON map into a request parameter
-~:)
+ :)
 declare private function request:convert-json-map($map as map:map) {
     for $key in map:keys($map)
     let $val := map:get($map,$key)
@@ -581,7 +581,7 @@ declare private function request:convert-json-map($map as map:map) {
 
 (:~
  :  Using JQGrid you can parse a query from field using simple language, parses from JSON into CTS Query
-~:)
+ :)
 declare function request:build-query($params)
 {
   let $filters := 
@@ -626,7 +626,7 @@ declare function request:build-query($params)
 
 (:~
  : Returns the parse Query from JQGrid 
-~:)
+ :)
 declare function request:parse-query()  
 {
  let $filters  := 
@@ -646,7 +646,7 @@ declare function request:parse-query()
 
 (:~
  : Redirects the request before sent to response
-~:)
+ :)
 declare function request:set-redirect($uri)
 {
    map:put($request,$REDIRECT,fn:data($uri))
@@ -654,7 +654,7 @@ declare function request:set-redirect($uri)
 
 (:~
  : Redirects the request and sends the redirect response code
-~:)
+ :)
 declare function request:set-redirect(
     $uri as xs:string,
     $redirect-code as xs:integer,
@@ -693,7 +693,7 @@ declare function request:add-param(
 
 (:~
  : Adds a request parameter from a map:map
-~:)
+ :)
 declare function request:add-params(
   $params as map:map
 ) as empty-sequence() {
@@ -734,7 +734,7 @@ declare function request:set-error(
 };
 (:~
  :  Returns if an error was thrown
-~:)
+ :)
 declare function request:error() as xs:boolean {
   map:get($request,$ERROR) = fn:true()
 };

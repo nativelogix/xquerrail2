@@ -3,7 +3,7 @@ xquery version "1.0-ml";
 : Model : Base
 : @author Gary Vidal
 : @version  1.0
-~:)
+ :)
 
 module namespace model = "http://xquerrail.com/model/base";
 
@@ -155,7 +155,7 @@ declare function model:build-uri($uri as xs:string,$model as element(domain:mode
 
 (:~
  : Creates a series of collections based on the existing update
-~:)
+ :)
 declare function build-collections($collections as xs:string*,$model as element(domain:model),$instance as item()) {
    for $c in $collections
    return
@@ -198,7 +198,7 @@ as xs:string+
  : @param - $domain-model - is the model for the given params
  : @param - $params - parameters of content that pertain to the domain model
  : @param - $strict - boolean value on whether to be strict or not
-~:)
+ :)
 declare function model:get-model-params(
    $domain-model as element(domain:model),
    $params as map:map,
@@ -221,7 +221,7 @@ declare function model:get-model-params(
 
 (:~
  :  Creates a new instance of an asset and returns that instance but does not persist in database
-~:)
+ :)
 declare function model:new(
   $domain-model as element(domain:model)
 ){
@@ -230,7 +230,7 @@ declare function model:new(
 
 (:~
  :  Creates a new instance of a model but does not persisted.
-~:)
+ :)
 declare function model:new(
   $domain-model as element(domain:model),
   $params as map:map
@@ -240,7 +240,7 @@ declare function model:new(
 
 (:~
  : Creates any binary nodes associated with model instance
-~:)
+ :)
 declare function model:create-binary-dependencies(
   $identity as xs:string,
   $instance as element()
@@ -250,7 +250,7 @@ declare function model:create-binary-dependencies(
 
 (:~
  :  Inserts any binary dependencies created from binary|file type elements
-~:)
+ :)
 declare function model:create-binary-dependencies(
   $identity as xs:string,
   $instance as element(),
@@ -265,7 +265,7 @@ declare function model:create-binary-dependencies(
                       map:get($binary-dependencies,$k),
                       xdmp:default-permissions(),
                       $identity
-            ), (:~Cleanup map~:)
+            ), (:~Cleanup map :)
             map:delete($binary-dependencies,$k)
             )
 };
@@ -396,7 +396,7 @@ as element()?
 
 (:~
  : Returns if the passed in _query param will return a model exists
-~:)
+ :)
 declare function model:exists(  
   $domain-model as element(domain:model),
   $params as map:map
@@ -423,7 +423,7 @@ declare function model:exists(
 : @param $domain-model the model of the document
 : @param $params the values to pull the id from
 : @return the document
-~:) 
+ :) 
 declare function model:get(
    $domain-model as element(domain:model), 
    $params as map:map
@@ -475,7 +475,7 @@ declare function model:get(
 : @param $domain-model the model of the document
 : @param $params the values to pull the id from
 : @return the document
-~:) 
+ :) 
 declare function model:getByReferenceKeyLabel(
    $domain-model as element(domain:model), 
    $params as map:map
@@ -535,7 +535,7 @@ declare function model:update-partial(
 };
 (:~
  : Creates an partial update statement for a given model.
-~:)
+ :)
 declare function model:update-partial(
     $domain-model as element(domain:model), 
     $params as map:map,
@@ -568,14 +568,14 @@ declare function model:update-partial(
 
 (:~
  : Overloaded method to support existing controller functions for adding collections
-~:)
+ :)
 declare function model:update($domain-model as element(domain:model),$params as map:map) {
    model:update($domain-model,$params,xdmp:default-collections())
 };
 
 (:~
  : Overloaded method to support existing controller functions for adding collections and partial update
-~:)
+ :)
 declare function model:update(
     $domain-model as element(domain:model),
     $params as map:map,
@@ -590,7 +590,7 @@ declare function model:update(
  : @param $params - List of update parameters for a given update, the uuid element must be present in the document
  : @param $collections - Additional collections to add to document
  : @param $partial - if the update should pull the values of the current-node if no params key is present
-~:)
+ :)
 declare function model:update(
     $domain-model as element(domain:model), 
     $params as map:map,
@@ -635,7 +635,7 @@ declare function model:create-or-update($domain-model as element(domain:model),$
    };
 (:~
  :  Returns all namespaces from domain:model and inherited from domain
-~:)
+ :)
 declare function model:get-namespaces($model as element(domain:model)) {
    let $ns-map := map:map()
    let $nses := 
@@ -651,7 +651,7 @@ declare function model:get-namespaces($model as element(domain:model)) {
 
 (:~
  :  Function allows for partial updates 
-~:)
+ :)
 declare function model:recursive-update-partial(
 $context as element(),
 $current as node()?,
@@ -663,7 +663,7 @@ $updates as map:map)
 
 (:~
  :  Entry for recursive updates
-~:)
+ :)
 declare function model:recursive-create(
    $context as node(),
    $updates as map:map
@@ -674,7 +674,7 @@ declare function model:recursive-create(
 
 (:~
  :  
-~:)
+ :)
 declare function model:recursive-update(   
    $context as node(),
    $current as node(),
@@ -688,7 +688,7 @@ declare function model:recursive-update(
 
 (:~
  :  
-~:)
+ :)
 declare function model:recursive-update(   
    $context as node(),
    $current as node(),
@@ -708,7 +708,7 @@ declare function model:recursive-build(
 
 (:~
  :  Recurses the field structure and builds up a document
-~:)
+ :)
 declare function model:recursive-build(
    $context as node(),
    $current as node()?,
@@ -912,7 +912,7 @@ as xs:boolean
 
 (:~
  : Deletes any binaries defined by instance
-~:)
+ :)
 declare function model:delete-binary-dependencies(
     $domain-model as element(domain:model),
     $current as element()
@@ -933,7 +933,7 @@ declare function model:delete-binary-dependencies(
  
 (:~
  :  Returns the lookup 
-~:)
+ :)
 declare function model:lookup($domain-model as element(domain:model), $params as map:map) 
 {
     let $key := fn:data($domain-model/@key)
@@ -1014,7 +1014,7 @@ declare function model:lookup($domain-model as element(domain:model), $params as
        </lookups>
 };
 
-(:~Recursively Removes elements based on @listable = true~:)
+(:~Recursively Removes elements based on @listable = true :)
 declare function model:filter-list-result($field as element(),$result) {
       if($field/domain:navigation/@listable = "false") 
       then ()
@@ -1209,7 +1209,7 @@ declare private function model:operator-to-cts(
 
 (:~
  : Converts a list operator to its cts:equivalent
-~:)
+ :)
 declare private function model:operator-to-cts(
     $field-elem as element(),
     $op as xs:string,
@@ -1442,7 +1442,7 @@ declare function model:build-search-options(
  : @param $domain-model the model of the content type
  : @param $params the values to fill into the search
  : @return search response element
-~:)
+ :)
 declare function model:search($domain-model as element(domain:model), $params as map:map)  
 as element(search:response)
 {
@@ -1471,7 +1471,7 @@ as element(search:response)
  : @param $domain-model the model of the content type
  : @param $params the values to fill into the search
  : @return search response element
-~:)
+ :)
 declare function model:suggest($domain-model as element(domain:model), $params as map:map)  
 as xs:string*
 {
@@ -1486,7 +1486,7 @@ as xs:string*
 
 (:~
  :  returns a reference given an id or field value.
-~:)
+ :)
 declare function model:get-references($field as element(), $params as map:map) {
     let $refTokens := fn:tokenize(fn:data($field/@reference), ":")
     let $element := element {$refTokens[1]} { $refTokens[1] }
@@ -1504,7 +1504,7 @@ declare function model:get-references($field as element(), $params as map:map) {
  : a relationship between two models types.
  : @param $reference is the reference element that is used to contain the references
  : @param $params the params items to build the relationship
-~:)
+ :)
  declare function model:get-model-references($reference as element(domain:element), $params as map:map)
  as element()* 
  {
@@ -1537,7 +1537,7 @@ declare function model:get-references($field as element(), $params as map:map) {
  : model for inlining in other references. 
  : @param $ids a sequence of ids for models to be extracted
  : @return a sequence of packageType
-~:)
+ :)
 declare function model:reference($domain-model as element(domain:model), $params as map:map) 
 as element()?
 {
@@ -1566,7 +1566,7 @@ as element()?
 
 (:~
  :
-~:)
+ :)
 declare  function model:get-application-reference($field,$params){
    let $reference := fn:data($field/@reference)
    let $ref-tokens := fn:tokenize($reference,":")
@@ -1599,7 +1599,7 @@ declare  function model:get-application-reference($field,$params){
  };
  (:~
   :
- ~:)
+  :)
  declare  function model:get-application-reference-values($field){
    let $reference := fn:data($field/@reference)
    let $ref-tokens := fn:tokenize($reference,":")
@@ -1625,7 +1625,7 @@ declare  function model:get-application-reference($field,$params){
 : @param domain-model the model to validate against
 : @param $params the params to validate 
 : @return return a set of validation errors if any occur.
-~:)
+ :)
 declare function model:validate($domain-model as element(domain:model), $params as map:map,$mode as xs:string)
 as element(validationError)*
 {
@@ -1754,7 +1754,7 @@ as element(validationError)*
 
 (:~
  :
-~:)
+ :)
 declare function model:put($domain-model as element(domain:model), $body as node()) 
 {   
     let $params := model:build-params-map-from-body($domain-model,$body)
@@ -1764,7 +1764,7 @@ declare function model:put($domain-model as element(domain:model), $body as node
 
 (:~
  : 
-~:)
+ :)
 declare function model:post($domain-model as element(domain:model), $body as node())  {
     let $params := model:build-params-map-from-body($domain-model,$body)
     return 
@@ -1774,7 +1774,7 @@ declare function model:post($domain-model as element(domain:model), $body as nod
 (:~
  :  Takes a simple xml structure and assigns it to a map
  :  Does not handle nested content models
-~:)
+ :)
 declare function model:build-params-map-from-body(
     $domain-model as element(domain:model), 
     $body as node()
@@ -1791,7 +1791,7 @@ declare function model:build-params-map-from-body(
 (:~
  :  Builds the value for a given field type.  
  :  This ensures that the proper values are set for the given field
-~:)
+ :)
 declare function model:build-value(
   $field as element(),
   $value as item()*,
@@ -1853,7 +1853,7 @@ declare function model:build-value(
  :  "!name*=" Any word or default
  :  "fieldname"  - performs a value query
  :  "join" 
-~:)
+ :)
 declare function model:find($domain-model as element(domain:model),$params as map:map) {
    
     let $search := model:find-params($domain-model,$params)
@@ -1951,13 +1951,13 @@ declare function partial-update(
 };
 (:~
  :  Finds particular nodes based on a model and updates the values
-~:)
+ :)
 declare function model:find-and-update($model,$params) {
    ()
 };
 (:~
  : Collects the parameters 
-~:)
+ :)
 (:
 declare function model:build-find-and-update-params(   
     $model,

@@ -1,7 +1,7 @@
 xquery version "1.0-ml";
 (:~
  : Resource Handler allows to customize how resources are handled by the application
-~:)
+ :)
 import module namespace request     = "http://xquerrail.com/request"     at "/_framework/request.xqy";
 import module namespace config      = "http://xquerrail.com/config"      at "/_framework/config.xqy";
 

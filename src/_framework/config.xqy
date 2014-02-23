@@ -1,6 +1,8 @@
 (:~
- : Provides access to config and supports retrieving resources from configuration entries
- : @version 1.1
+ : 
+ : Provides access to config and supports retrieving resources from configuration entries 
+ : and general features for accessing resources and values from config.xml
+ : @version 2.0
  :)
 xquery version "1.0-ml";
 
@@ -91,8 +93,8 @@ declare variable $DOMAIN-CACHE-KEY := "application-domain::" ;
 declare variable $DOMAIN-CACHE-TS := "application-domains:timestamp::";
 
 (:~
-  Initializes the application domains and caches them in the applicatino server. 
-  When using a cluster please ensure you change configuration to cache from database
+ : Initializes the application domains and caches them in the application server. 
+ : When using a cluster please ensure you change configuration to cache from database
  :)
 declare function config:refresh-app-cache() {
    for $sf in xdmp:get-server-field-names()
@@ -111,11 +113,9 @@ declare function config:refresh-app-cache() {
       }
    else ()
 };
-declare function config:version() {
-  ()
-};
+
 (:~
- : Returns a list of applications from the config.xml
+ : Returns a list of applications from the config.xml. 
  :)
 declare function config:get-applications() {
    $CONFIG/domain:application
@@ -124,8 +124,8 @@ declare function config:get-applications() {
 
 (:~Function Returns a resource based on 
  : how the application server is configured.
- : If the modules are in the filesystem.  It invokes the modules
- : If the modules are in a modules database then it evals the call to the modules database using the uri
+ : If the modules are in the filesystem. then it is invoked from the filesystem.  If the modules are in a modules database then it evals the call to the modules database using the uri
+ : @param $uri - The URI specifying the resource.  The resource is managed from the filesystem then the file is invoked as an xml file.
  :)
 declare function config:get-resource($uri as xs:string) {
     if(xdmp:modules-database() = 0 ) 
@@ -140,14 +140,18 @@ declare function config:get-resource($uri as xs:string) {
 };
 
 (:~
- : Retrieves the config value. 
-:)
+ : Retrieves the config value from a database.  This is different than accessing 
+ : a resource from the modules database
+ : @param $uri - The uri to load from the database
+ :)
 declare function config:get-dbresource($uri as xs:string) {
    fn:doc($uri)
 };
 
 (:~
- : Returns a configuration value of the given resource
+ : Returns a configuration value of the given resource. 
+ : @param $node - The node must have at least the @resource or @dbresource or @value to resolve the resource.  
+ :                If not present throws INVALID_CONFIGURATION_VALUE  exception.
  :)
 declare function config:get-config-value($node as element()?) {
    if($node/@dbresource) 
@@ -161,6 +165,7 @@ declare function config:get-config-value($node as element()?) {
    else fn:error(xs:QName("INVALID_CONFIGURATION_VALUE"),
         "A configuration value must be an attribute whose name is @resource,@dbresource,@value",$node)
 };
+
 (:~
  : Returns the default application defined in the config or application config
  : The default application is "application"
@@ -176,6 +181,8 @@ declare function config:get-config-value($node as element()?) {
  }; 
 (:~
  : Returns the default controller for entire application usually default
+ : This reads the configuration in the following order: 
+ : $CONFIG/config:application/config:default-controller
  :)
 declare function config:default-controller()
 {
@@ -183,8 +190,10 @@ declare function config:default-controller()
 };
 
 (:~
- : Returns the default template assigned to the application
-~:)
+ : Returns the default template assigned to the application. This reads the configuration in the following order:
+ : $CONFIG/config:application/config:default-template/@value resource
+ : $CONFIG/config:default-template/@value
+ :)
 declare function config:default-template($application-name) {
   (
    config:get-application($application-name)/config:default-template/@value/fn:string(),
@@ -194,7 +203,9 @@ declare function config:default-template($application-name) {
 };
 
 (:~
- : Returns the default action 
+ : Returns the default action specifed by the <config:default-action/> configuration element. 
+ The default action is used to determine any actions that does not pass an action.
+ : Reads $CONFIG/config:default-action
 :)
 declare function config:default-action()
 {
@@ -202,7 +213,8 @@ declare function config:default-action()
 };
 
 (:~
- : Returns the default format
+ : Returns the default format. The default format specifies that any 
+ :  URI that does not explicitly define its format will use this value.
  :)
 declare function config:default-format()
 {
@@ -210,7 +222,8 @@ declare function config:default-format()
 };
 
 (:~
- : returns the default dispatcher for entire framework.
+ : Returns the default dispatcher for entire framework. By default the only dispatcher defined is the 
+  /_framework/displatcher/dispatcher.web.xqy. But if a custom dispatcher is implemented then the configuration will use that value.
  :)
 declare function config:get-dispatcher()
 {
@@ -218,8 +231,8 @@ declare function config:get-dispatcher()
 };
 
 (:~
- : returns the application configuration for a given application by name
- : @param application-name Application name
+ : Returns the application configuration for a given application by name
+ : @param $application-name - The name of the application specified by the @name parameter
  :)
 declare function config:get-application($application-name as xs:string)
 {
@@ -233,6 +246,9 @@ declare function config:get-application($application-name as xs:string)
 
 (:~
  : Returns the resource directory for framework defined in /_config/config.xml
+ : $the value is specifed as 
+ : $CONFIG/config:resource-directory
+ : "/resources/"
  :)
 declare function config:resource-directory() as xs:string
 {
@@ -242,7 +258,8 @@ declare function config:resource-directory() as xs:string
 }; 
 
 (:~
- : Returns the engine for processing requests satisfying the request
+ : Returns the base-model location as defined in the config.xml
+ : @param $model-name - Returns the location of the model if defined in the calling application.
  :)
 declare function config:get-base-model-location($model-name as xs:string) {
 
@@ -255,7 +272,11 @@ declare function config:get-base-model-location($model-name as xs:string) {
 };
 
 (:~
- : Gets the current view directory defined in the configuration
+ : Returns the base-view-directory defined in the configuration
+ : The following order is defined for reading this value.
+    $CONFIG/config:base-view-directory
+    "/_framework/base/views"
+ : th
  :)
 declare function config:base-view-directory() {
    let $dir :=  fn:data($CONFIG/config:base-view-directory/@value)
@@ -264,53 +285,66 @@ declare function config:base-view-directory() {
 };
 
 (:~
- : Get the current application directory
+ : Get the current application directory defined by the /application/@uri attribute 
+ : @param $application - If the passed value is a string then it will lookup the application by name then return the uri.
+ : else if the `$application` is an instance of domain:appliation then reads the @uri attribute.
  :)
-declare function config:application-directory($application-name)
+declare function config:application-directory($application)
 {
-   if($application-name instance of element(config:application))
-   then $application-name/@uri
-   else config:get-application($application-name)/@uri
+   if($application instance of element(config:application))
+   then $application/@uri
+   else config:get-application($application)/@uri
 };
 (:~
- : Get the current application directory
+ : Get the current application namespace defined by $CONFIG/config:application/@namespace
+ : @param $application - If the passed value is a string then it will lookup the application by name then return the @namespace.
+ : else if the `$application` is an instance of domain:appliation then reads the @namespace attribute.
  :)
-declare function config:application-namespace($application-name)
+declare function config:application-namespace($application)
 {
-   if($application-name instance of element(config:application))
-   then $application-name/@uri
-   else config:get-application($application-name)/@namespace
+   if($application instance of element(config:application))
+   then $application/@uri
+   else config:get-application($application)/@namespace
 };
 (:~
- : Get the current application script directory
+ : Get the current application script directory defined by the config:application/config:script-directory
+ : If not present then the config:resource-directory is returned
+ : @param $application - string name or instance of the <config:application/> element
  :)
-declare function config:application-script-directory($application-name)
+declare function config:application-script-directory($application)
 {
-   (fn:data(config:get-application($application-name)/config:script-directory/@value),
+   (fn:data(config:get-application($application)/config:script-directory/@value),
     config:resource-directory())[1]
 };
+
 (:~
- : Get the current application stylesheet directory
+ : Get the current application stylesheet directory defined by the config:application/config:stylesheet-directory
+  : If not present then the config:resource-directory is returned config:resource-directory
+ : @param $application - string name or instance of the <config:application/> element
  :)
-declare function config:application-stylesheet-directory($application-name)
+declare function config:application-stylesheet-directory($application)
 {
    (
-    fn:data(config:get-application($application-name)/config:stylesheet-directory/@value),
+    fn:data(config:get-application($application)/config:stylesheet-directory/@value),
     config:resource-directory()
    )[1]
 };
 
 
 (:~
- : Gets the default anonymous user
+ : Gets the default anonymous user defined by the default application.
+ : IF not present then returns the $CONFIG/config:anonymous-user/@value
  :)
 declare function config:anonymous-user()
 {
-   config:anonymous-user(config:default-application())
+   (
+      config:anonymous-user(config:default-application()),
+      $CONFIG/config:anonymous-user/@value
+    )[1]
 };
 
 (:~
- : Gets the default anonymous user
+ : Gets the default anonymous user defined by the application
  :)
 declare function config:anonymous-user($application-name)
 {(
@@ -320,8 +354,9 @@ declare function config:anonymous-user($application-name)
 
 
 (:~
- :  Get the domain for a given application
- :  @param $application-name - Name of the application
+ :  Get the domain for a given application. The domain is cached to optimize performance 
+ :  and if changed may need to be initialized to reflect the latest values
+ :  @param $application-name - Name of the application to get the domain.
  :)
 declare function config:get-domain($application-name)
 {
@@ -364,7 +399,7 @@ $domain as element(domain:domain)
 };
 
 (:~
- : Returns the routes configuration file 
+ : Returns the routes configuration file defined by $CONFIG/config:routes-config
  :)
 declare function config:get-routes()
 {
@@ -372,14 +407,15 @@ declare function config:get-routes()
 };
 
 (:~
- : Returns the routing module 
+ : Returns the routes module file defined by $CONFIG/config:routes-module
  :)
 declare function config:get-route-module() {
    $CONFIG/config:routes-module/@resource
 };
 
 (:~
- : Returns the engine for processing requests satisfying the request
+ : Returns the engine for processing requests satisfying the response:format()
+ : If no format matching an engine is found then the $CONFIG/config:default-engine/@value is returned
  :)
 declare function config:get-engine($response as map:map)
 {
@@ -396,7 +432,10 @@ declare function config:get-engine($response as map:map)
 
 
 (:~
- : Returns the Error Handler location from the configuration
+ : Returns the Error Handler location from the configuration at 
+ : $CONFIG/config:error-handler/@resource,
+ : $CONFIG/config:error-handler/@dbresource
+ : "/_framework/error.xqy"
  :)
 declare function config:error-handler()
 { 
@@ -407,15 +446,17 @@ declare function config:error-handler()
   )[1]
 };
 (:~
- : Returns the list of all interceptors defined in the system
+ : Returns the list of all interceptors defined in the configuration
  :)
 declare function config:get-interceptors()
 {
   config:get-interceptors(())
 };
 
+
 (:~
- : Returns all interceptors that match a given value
+ : Returns all interceptors that match the interceptor event.  The event will correspond the attributes
+ : @param $value - The event to math values are: before-request|after-request|before-response|after-response
  :)
 declare function config:get-interceptors(
   $value as xs:string?
@@ -450,11 +491,18 @@ declare function config:interceptor-config() as xs:string?
 declare function config:resource-handler() {
   $CONFIG/config:resource-handler
 };
-
+(:~
+ :  Defines the default controller suffix as defined by $CONFIG/config:controller-suffix 
+ :)
 declare function config:controller-suffix() as xs:string {
   $CONFIG/config:controller-suffix
 };
 
+(:~
+ : Returns a property defined in the $CONFIG/config:properties/config:property. 
+ : The value can be specified by either resource/value or text() attribute
+ : @param $name - name of the resource property to return
+ :)
 declare function config:property($name as xs:string)  as item(){
   let $value := $CONFIG/config:properties/config:property[@name = $name]/(@resource|@value|text())[1]
   return 

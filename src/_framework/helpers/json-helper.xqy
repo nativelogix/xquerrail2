@@ -9,7 +9,7 @@ xquery version "1.0-ml";
         Namespace support using . notation
         ie. dc.identifier dc="http://purl.org/dc/elements/1.1"
             <some.element xmlns="urn:some"/>  translates to : "some.some_x25_element" : ""
-~:)
+ :)
 module namespace json = "http://xquerrail.com/helper/json";
 
 declare namespace js = "http://marklogic.com/xdmp/json";
@@ -46,7 +46,7 @@ declare variable $DESERIALIZE-OPTIONS :=
 declare variable $DATE-REGEX := "/Date\((\d*)\)/";
 
 (:Some stolen functions from CQ:)
-(:~ get the epoch seconds ~:)
+(:~ get the epoch seconds  :)
 declare function json:get-epoch-seconds($dt as xs:dateTime)
   as xs:unsignedLong
 {
@@ -55,14 +55,14 @@ declare function json:get-epoch-seconds($dt as xs:dateTime)
     div xs:dayTimeDuration('PT1S') )
 };
 
-(:~ get the epoch seconds ~:)
+(:~ get the epoch seconds  :)
 declare function json:get-epoch-seconds()
   as xs:unsignedLong
 {
   json:get-epoch-seconds(fn:current-dateTime())
 };
 
-(:~ convert epoch seconds to dateTime ~:)
+(:~ convert epoch seconds to dateTime  :)
 declare function json:epoch-seconds-to-dateTime($v)
   as xs:dateTime
 {
@@ -82,7 +82,7 @@ declare function json:duration-to-microseconds($d as xs:dayTimeDuration)
  : @param $node - Element or Document to convert to JSON
  : @param $options - Serialization Options
  : @return JSON 
-~:)
+ :)
 declare function json:serialize($node as node(),$options as xs:string*) {
      if($options = "xson") then
       json:build-xson($node,$options)
@@ -93,7 +93,7 @@ declare function json:serialize($node as node(),$options as xs:string*) {
  : Parses Xml Structure and generates JSON object
  : @param $node - Element or Document to convert to JSON
  : @return JSON 
-~:)
+ :)
 declare function json:serialize($node as node()) as xs:string {
 	json:serialize($node,())
 };
@@ -102,7 +102,7 @@ declare function json:serialize($node as node()) as xs:string {
  :  Deserializes a json string to xml
  :  @param $json - JSON string
  :  @return an sequence
-~:)
+ :)
 declare function json:deserialize($json as xs:string)
 {
    json:deserialize($json,())
@@ -111,7 +111,7 @@ declare function json:deserialize($json as xs:string)
  :  Deserializes a json string to xml
  :  @param $json - JSON string
  :  @return an xml sequence
-~:)
+ :)
 declare function json:deserialize($json as xs:string, $options as xs:string*) 
 {
    let $json-fix := 
@@ -172,7 +172,7 @@ declare function json:parse-string($name as xs:string,$value as xs:string,$optio
    @param $parent - parent map:entry used to build map
    @param $options - list of options used during serialization process
    @return map:map of converted xml
-~:)
+ :)
 declare function json:build-json($nodes as node()*, $parent as map:map,$options as xs:string*) as map:map {
 let $_process  := 
    for $node in $nodes
@@ -242,7 +242,7 @@ declare function json:get-scoped-namespaces($node as element()*,$map as element(
    @param $parent - parent map:entry used to build map
    @param $options - list of options used during serialization process
    @return map:map of converted xml
-~:)
+ :)
 declare function json:build-xson($nodes as node()*, $options as xs:string*) {
 let $_process  := 
    for $node in $nodes
@@ -314,7 +314,7 @@ declare function json:serialize-item($name as xs:string,$value) {
 };
 (:~
   Resolves a value using options and various checks
-~:)
+ :)
 declare private function json:serialize-value($elem as node(), $options as xs:string*)
 {
   let $value-map := js:object()
@@ -353,7 +353,7 @@ declare private function json:serialize-value($elem as node(), $options as xs:st
 };
 (:~
    Checks if a map contains a key and appends items as a sequence or creates a new map:entry
-~:)
+ :)
 declare private function json:put($map as map:map,$key as xs:string,$value as item()*) {
  let $item := map:get($map,$key)
  let $_    := 
@@ -371,6 +371,7 @@ declare function json:to-json($node as node()) {
  
  json:to-json($node,$DEFAULT-OPTIONS)
 };
+
 declare function json:to-json($node, $options) {
    xdmp:to-json(json:serialize($node,$options))
 };

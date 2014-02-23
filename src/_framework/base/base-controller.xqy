@@ -1,10 +1,11 @@
 xquery version "1.0-ml";
 (:~
- : Controller :  Base Controller
- :               
+ : The base controller is responsible for all domain controller functions. 
+ : Any actions specified in the base controller will be globally accessible by each domain controller.
+ : 
  : @author   : Gary Vidal
- : @version  : 1.0  
-~:)
+ : @version  : 2.0  
+ :)
 
 module namespace controller = "http://xquerrail.com/controller/base";
 
@@ -34,7 +35,11 @@ declare namespace search = "http://marklogic.com/appservices/search";
 declare option xdmp:mapping "false";
 declare variable $collation := "http://marklogic.com/collation/codepoint";
 
-
+(:~
+ : Initiailizes the request to allow calling into request:* and response:* functions.
+ : @param $request - Request map:map representing the request.
+ : @return true if the request/response was initialized properly
+ :)
 declare function controller:initialize($request)
 {(
    xdmp:log(("initialize::",$request),"debug"),
@@ -42,7 +47,9 @@ declare function controller:initialize($request)
    response:initialize(map:map(),$request),
    response:set-partial(request:partial())
 )};
-
+(:~
+ : Returns the model associated with the controller.  All actions in base use the controller to define the model.
+ :)
 declare function controller:model()
 {
    let $model := domain:get-controller-model(request:application(),request:controller())
@@ -50,6 +57,10 @@ declare function controller:model()
      if($model) then $model
      else fn:error(xs:QName("INVALID-MODEL"),"Invalid Model for application",(request:application(),request:controller()))
 };
+
+(:~
+ : Action returns the model as an endpoint representing the schema
+ :)
 declare function controller:schema() {
   (
     response:set-model(controller:model()),
@@ -59,11 +70,19 @@ declare function controller:schema() {
     response:flush()
   )
 };
+
+(:~
+ : Action returns 
+ :)
 declare function controller:controller()
 {
     domain:get-controller(request:application(),request:controller())
 };
 
+(:~
+ : Invokes the action associated with the controller and matches the name to the appropriate action
+ : @param $action - Name of the action to invoke
+ :)
 declare function controller:invoke($action)
 {
  response:set-model(controller:model()),
@@ -96,12 +115,14 @@ declare function controller:invoke($action)
    else fn:error(xs:QName("CONTROLLER-NOT-EXISTS"),"Controller does not exist",request:controller())
  )
 };
-(:Controller Required Functions:)
- 
+
+(:Controller Required Functions:) 
 declare function controller:name() {
    "base"
 }; 
-
+(:~
+ : Entry for main when no action is specified
+ :)
 declare function controller:main()
 {
    if(request:format() eq "xml") 
@@ -115,8 +136,11 @@ declare function controller:main()
      controller:index()  
    )
 };
-
-  declare function controller:info() { 
+(:~
+ : Action returns the specification for the given controller.
+ : @deprecated
+ :)
+declare function controller:info() { 
   <info xmlns:domain="http://xquerrail.com/domain"
       xmlns:search="http://marklogic.com/appservices/search"
       xmlns:builder="http://xquerrail.com/builder">
@@ -158,23 +182,23 @@ declare function controller:main()
 };
 
 (:~
- : Create contentType
-~:) 
+ : Creates an instance of the model representing the controller
+ :) 
 declare function controller:create() {(
   xdmp:log(("controller:create::",request:params()),"debug"),
   model:create(controller:model(),request:params())
 )};
 
 (:~
- :  Retrieves a contentType
-~:) 
+ :  Returns an instance of the domain which is assigned to the controller
+ :) 
 declare function controller:get()
 {
    model:get(controller:model(),request:params())
 };
  
 (:~
- : Update Operation contentType
+ : Updates the instance of the controller and returns the value of the update.
  :) 
 declare function controller:update()
 {
@@ -187,8 +211,8 @@ declare function controller:update()
 };
  
 (:~
- :  Deletes a contentType
-~:)  
+ :  Deletes an instance of the model assigned to the controller
+ :)  
 declare function controller:delete()
 {
     model:delete(
@@ -198,11 +222,11 @@ declare function controller:delete()
 };
  
 (:~
- : Provide search interface for contentType
+ : Provide search interface for model assigned to the controller
  : @param $query - Search query 
  : @param $sort -  Sorting Key to sort results by
  : @param $start 
-~:)
+ :)
 declare function controller:search()
 {(
 
@@ -215,7 +239,7 @@ declare function controller:search()
 )};
 (:~
  : Provide search suggestions for contentType
-~:)
+ :)
 declare function controller:suggest()
 {(
   let $suggestions :=  model:suggest(controller:model(),request:params())
@@ -228,7 +252,7 @@ declare function controller:suggest()
 
 (:~
  : Returns a list of records
-~:)
+ :)
 declare function controller:list()
 {
     xdmp:log(("controller:list::",request:params()),"debug"),
@@ -245,8 +269,8 @@ declare function controller:list()
  :)
  
 (:~
- : Default Index Page 
-~:)
+ : Default Index Page this is usually associated with a list grid representing the model
+ :)
 declare function controller:index()
 {(
    controller:list()[0],
@@ -258,8 +282,7 @@ declare function controller:index()
     response:flush()
 )};
 
- (:~ Show a record ~:) 
- 
+(:~ Show a record  :) 
 declare function controller:show()
 {
  (   
@@ -269,7 +292,7 @@ declare function controller:show()
     response:flush()
  )     
 };   
- (:~ Same as show just readonly ~:) 
+ (:~ Same as show just readonly  :) 
  
 declare function controller:details()
 {
@@ -280,6 +303,9 @@ declare function controller:details()
     response:flush()
  )     
 };   
+(:~
+ : Returns a HTML representation of the model to create a new instance.
+ :)
 declare function controller:new()
 {(  
     response:set-template(config:default-template(request:application())),
@@ -290,7 +316,7 @@ declare function controller:new()
 
 (:~
  :  Saves a controller
-~:)
+ :)
 declare function controller:save()
 {
    let $identity-field := model:get-id-from-params(controller:model(),request:params())

@@ -24,7 +24,7 @@ declare namespace pki="http://marklogic.com/xdmp/pki";
 
 (:~
  : Initialize a database and build all relevant index configurations
-~:)
+ :)
 declare function initialize($application-name as xs:string,$environment as xs:string) {
    let $domain :=  config:get-domain($application-name) 
    let $models :=  $domain/domain:model/domain:get-model(./@name)
@@ -39,7 +39,7 @@ declare function initialize($application-name as xs:string,$environment as xs:st
 };
 (:~
  : 
-~:)
+ :)
 declare function assign-field-index($map as map:map,$field as element()) {
     let $index-type := fn:string($field/@type)
     let $index := 
@@ -117,5 +117,5 @@ declare function  build-index-script($map as map:map) {
 };
 
 declare function apply-configuration($configuration) {
-
+()
 };

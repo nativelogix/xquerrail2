@@ -2,7 +2,7 @@ xquery version "1.0-ml";
 (:~
  : Performs core engine for transformation and base implementation for 
  : different format engines
-~:)
+ :)
 module namespace engine = "http://xquerrail.com/engine";
 
 import module namespace request = "http://xquerrail.com/request"
@@ -34,7 +34,7 @@ declare variable $_plugins := map:map();
 
 (:~
  : registers a plugin with the engine
-~:)
+ :)
 declare function  engine:register-plugin($plugin as xdmp:function)
 {
    map:put($_plugins,xdmp:function-name($plugin),$plugin)
@@ -42,7 +42,7 @@ declare function  engine:register-plugin($plugin as xdmp:function)
 
 (:~
  : Returns a list of plugin names registered with egine
-~:)
+ :)
 declare function engine:plugin-names()
 {
    map:keys($_plugins)
@@ -50,7 +50,7 @@ declare function engine:plugin-names()
 
 (:~
  : Returns a list of plugins registered with engine
-~:)
+ :)
 declare function engine:plugins()
 {
    for $p in map:keys($_plugins) return map:get($_plugins,$p)
@@ -65,7 +65,7 @@ declare variable $this-values := map:map();
  : To allow your engine to route transform calls from base
  : You must register your engines transformer function in
  : order for the base engine to route any functions you will handle
-~:)
+ :)
 declare function engine:set-engine-transformer($func as xdmp:function)
 {
    xdmp:set($engine-transformer,$func)
@@ -73,7 +73,7 @@ declare function engine:set-engine-transformer($func as xdmp:function)
 
 (:~
  : Register any custom tags you will be overriding from custom engine
-~:)
+ :)
 declare function engine:register-tags($tagnames as xs:QName*)
 {
   for $tag in $tagnames
@@ -82,7 +82,7 @@ declare function engine:register-tags($tagnames as xs:QName*)
 };
 (:~
  : Check to see if a tag has been registered with the engine
-~:)
+ :)
 declare function engine:tag-is-registered(
   $tag as xs:string
 )
@@ -97,7 +97,7 @@ declare function engine:tag-is-registered(
  : When building custom tag that requires a closing tag 
  : ensure that you consume the results you process or you
  : will find duplicate or spurious output results 
-~:)
+ :)
 declare function engine:consume($node)
 {
   (
@@ -115,7 +115,7 @@ declare function engine:visit($node)
 };
 (:~
  :  Returns boolean value of whether a node has been visited.
-~:)
+ :)
 declare function engine:visited($node)
 {   if($node instance of json:object) 
     then fn:exists(map:get($visitor,fn:generate-id(<x>{$node}</x>/*)))
@@ -124,7 +124,7 @@ declare function engine:visited($node)
 
 (:~
  : Transforms an if tag for processing
-~:)
+ :)
 declare function engine:transform-if($node as node())
 {
   let $endif := $node/following-sibling::processing-instruction("endif")[1]
@@ -167,7 +167,7 @@ declare function engine:transform-if($node as node())
 (:~
  : The for tag must handle its one process 
    and return the context to the user
-~:)
+ :)
 declare function engine:process-for-this(
    $this-tag as processing-instruction("this"),
    $this)
@@ -188,7 +188,7 @@ declare function engine:process-for-this(
 (:~
  : The for tag must handle its one process 
    and return the context to the user
-~:)
+ :)
 declare function engine:process-for-context($nodes,$context,$key)
 {
    for $node in $nodes
@@ -352,14 +352,14 @@ declare function engine:view-uri($controller,$action) {
 };
 (:~
  : Returns a view URI based on a controller/action
-~:)
+ :)
 declare function engine:view-uri($controller,$action,$format)
 { 
    engine:view-uri($controller,$action,$format,fn:true())
 };
 (:~
  : Returns a view URI based on a controller/action
-~:)
+ :)
 declare function engine:view-uri($controller,$action,$format,$checked as xs:boolean)
 {
 
@@ -403,7 +403,7 @@ declare function engine:render-template($response)
 (:~
  : Partial rendering intercepts a call and routes only the view, even if a template is defined.
  : This is to support ajax type calls for rendering views in a frame or container
-~:)
+ :)
 declare function engine:render-partial($response)
 {
    engine:render-view()
@@ -471,9 +471,10 @@ declare function engine:transform-echo($node as processing-instruction("echo")){
 declare function engine:transform-xsl($node) {
    let $_node  := xdmp:unquote(fn:concat("<xsl ",fn:data($node),"/>"))/node()
    let $source := xdmp:value($_node/@source)
+   let $params := if($_node/@params) then xdmp:value($_node/@params) else map:map()
    let $xsl    := $_node/@xsl
    return
-       xdmp:xslt-invoke($xsl,$source)
+       xdmp:xslt-invoke($xsl,$source,$params)
 };
 
 declare function engine:transform-to-json($node) {
@@ -529,7 +530,7 @@ declare function engine:transform($node as item())
          case processing-instruction("view") return engine:transform-view($node) 
          case processing-instruction("if") return engine:transform-if($node)
          case processing-instruction("for") return engine:transform-for($node)
-         case processing-instruction("has-slot") return engine:transform-has_slot($node)
+         case processing-instruction("has_slot") return engine:transform-has_slot($node)
          case processing-instruction("slot") return engine:transform-slot($node)
          case processing-instruction("echo") return engine:transform-echo($node)
          case processing-instruction("xsl") return engine:transform-xsl($node)

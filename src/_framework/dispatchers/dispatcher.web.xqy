@@ -1,5 +1,5 @@
 xquery version "1.0-ml";
-(:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+(::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
    Copyright 2011 - Gary Vidal
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +19,8 @@ xquery version "1.0-ml";
  : The controller directs all requests to the rest interface.
  : The controller is used to send all request with the action parameter to the action method name in the REST interface.
  : Reformat the incoming search request parameters as elements.
- : <br/>For example, given the rewritten URL:
- : <br/>Return the rest function output.
+ : For example, given the rewritten URL:
+ : Return the rest function output.
  :
  :)
 import module namespace request     = "http://xquerrail.com/request"     at "/_framework/request.xqy";
@@ -39,17 +39,17 @@ declare namespace error          = "http://marklogic.com/xdmp/error";
 
 (:~ convert error into html page or as simple element :)
 
-declare variable $controller:REPORT-HTML-ERRORS as xs:boolean := fn:true();
-
 declare option xdmp:mapping "false";
 declare option xdmp:output "indent=yes";
 declare option xdmp:output "method=xml";
 declare option xdmp:output "indent-untyped=yes";
 declare option xdmp:ouput "omit-xml-declaration=yes";
 
+declare variable $controller:REPORT-HTML-ERRORS as xs:boolean := fn:true();
+declare variable $CONTROLLER-PATH := "/controller/";
 (:~
- : Returns whether the controller exists or not
-~:)
+ : Returns whether the controller exists or not.
+ :)
 declare function dispatcher:controller-exists($controller-uri as xs:string) as xs:boolean {
 	if (xdmp:modules-database() ne 0) then
 		xdmp:eval(fn:concat('fn:doc-available("', $controller-uri, '")'), (),
@@ -63,7 +63,7 @@ declare function dispatcher:controller-exists($controller-uri as xs:string) as x
 
 (:~
  : Checks that a given controller function exists
-~:)
+ :)
 declare function dispatcher:action-exists(
 $controller-uri,
 $controller-location,
@@ -84,7 +84,7 @@ $controller-action
 
 (:~
  : Checks whether the given view exists in modules database or on filesystem location
-~:)
+ :)
 declare function dispatcher:view-exists($view-uri as xs:string) as xs:boolean
 {
 	if (xdmp:modules-database()) then
@@ -102,7 +102,7 @@ declare function dispatcher:view-exists($view-uri as xs:string) as xs:boolean
  :  If defined the routing will use the application error handler
  :  or if not will use the framework internal one.
  :  @param $ex - Error XML response
-~:)
+ :)
 declare function dispatcher:error(
 $ex as element(error:error)
 ){
@@ -123,7 +123,7 @@ $ex as element(error:error)
 
 (:~
  :  Executes a named controller using REST methods interface
-~:)
+ :)
 declare function dispatcher:invoke-controller()
 { 
    let $application as xs:string? := (request:application(),config:default-application())[1]
@@ -161,7 +161,7 @@ declare function dispatcher:invoke-controller()
 
 (:~
  : Renders the output 
-~:)
+ :)
 declare function dispatcher:invoke-response($response,$request)
 {
     let $application := request:application()[1]

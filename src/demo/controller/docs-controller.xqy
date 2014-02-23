@@ -2,7 +2,7 @@ xquery version "1.0-ml";
 (:~
 : Documentation Controller
 : @author garyvidal@hotmail.com
-~:)
+ :)
 module namespace controller = "http://xquerrail.com/demo/controller/docs";
 
 import module namespace request = "http://xquerrail.com/request"

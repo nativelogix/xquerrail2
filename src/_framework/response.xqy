@@ -1,10 +1,11 @@
 xquery version "1.0-ml";
 (:~
  : Response Helper function wrapper.
-~:)
+ :)
 module namespace response = "http://xquerrail.com/response";
 
 import module namespace request = "http://xquerrail.com/request" at "request.xqy";
+import module namespace config  = "http://xquerrail.com/config"  at "config.xqy";
 
 declare namespace domain = "http://xquerrail.com/domain";
 
@@ -42,7 +43,7 @@ declare variable $COOKIE       := "response:cookie::";
 declare variable $FLASH        := "response:flash::";
 (:~
  : Response Map used to store all response information
-~:)
+ :)
 declare variable $response := map:map();
 
 declare function response:__init__() {
@@ -84,6 +85,7 @@ declare function response:set-base($isbase as xs:boolean)
 {
    map:put($response,$BASE,$isbase)
 };
+
 declare function response:base()
 {
    map:get($response,$BASE) eq fn:true()
@@ -91,8 +93,10 @@ declare function response:base()
 (:~
  : Sets the response object for convenience features
  :)
-declare function response:set-response($_response as map:map,$_request as map:map?)
-{
+declare function response:set-response(
+  $_response as map:map,
+  $_request as map:map?
+) {
   try {
    (xdmp:set($response, $_response),response:set-defaults($_request),fn:true() )
   } catch($ex)
@@ -164,7 +168,7 @@ declare function response:has-flash($code) as xs:boolean{
  : between requests redirects for validation and other things.
  : THe flash object is cleared between request/response calls.
  : @param $name as xs:string
-~:)
+ :)
 declare function response:set-flash($name as xs:string,$message as xs:string)
 {
   map:put($response,fn:concat($FLASH,$name),$message)
@@ -178,7 +182,7 @@ declare function response:flash($code){
  : In order to Route the request you must flush the map at the end 
  : of a controller response.  The map is used by the dispatcher 
  : finalize the rendering process.
-~:)
+ :)
 declare function response:flush()
 {
     $response
@@ -308,36 +312,50 @@ declare function response:template()
 {
   map:get($response,$TEMPLATE)
 };
-
-
-declare function response:redirect($controller as xs:string,$action as xs:string)
-{
-     map:put($response,$REDIRECT,fn:concat("/",$controller,"/",$action))
- 
+declare function response:redirect($controller as xs:string,$action as xs:string) {
+   response:redirect($controller,$action,config:default-format())
 };
-
+declare function response:redirect($controller as xs:string,$action as xs:string,$format)
+{
+     map:put($response,$REDIRECT,fn:concat("/",$controller,"/",$action,".",$format))
+};
+(:~
+ : Sets the response redirect uri.  Redirection is not immediately processed an deferred by dispatcher
+ : to allow interceptors to interact with the response before redirection
+ : @param $uri - is the complete uri of the redirection response
+ :)
 declare function response:redirect($uri as xs:string)
 {
  
    map:put($response,$REDIRECT,$uri)
 };
-
+(:~
+ : Returns the definition of the redirection
+ :)
 declare function response:redirect()
 {
    map:get($response,$REDIRECT)
 };
-
-declare function response:add-header($key,$value)
+(:~
+ : 
+ :)
+declare function response:add-header($key as xs:string,$value as xs:string*)
 {
-   map:put($response,fn:concat($HEADER,$key),$value)
+   response:add-response-header($key,$value)
 };
 
-declare function response:add-response-header($key,$value)
+(:~
+ : Adds a response header to response
+ :)
+declare function response:add-response-header($key as xs:string,$value as xs:string*)
 {
-   map:put($response,fn:concat($HEADER,$key),$value)
+   map:put($response,fn:concat($HEADER,$key),fn:string-join($value,"; "))
 };
 
-declare function response:response-header($key)
+(:~
+ : Returns a response header by key 
+ :)
+declare function response:response-header($key as xs:string)
 {
    map:get($response,fn:concat($HEADER,$key))
 };
@@ -363,8 +381,10 @@ declare function response:add-param(
      map:put($response,$pkey,(map:get($response,$pkey),$value))
 }; 
 
-declare function response:set-param($key as xs:string,$value as xs:string)
-{
+declare function response:set-param(
+  $key as xs:string,
+  $value as xs:string
+) as empty-sequence() {
    let $pkey := fn:concat($PARAMETER,$key)
    return
      map:put($response,$pkey,$value)
@@ -390,24 +410,29 @@ declare function response:param($key)
 };
 
 
-declare function response:get-data($key)
+declare function response:get-data($key as xs:string)
 {
    map:get($response,$key)
 };
 
-declare function response:set-data($key,$value)
+declare function response:set-data($key as xs:string,$value as item()*)
 {
   map:put($response,$key,$value)
 };
-declare function response:data($key)
+
+declare function response:data($key as xs:string)
 {
   response:get-data($key)
 };
-declare function response:add-data($key,$value)
+
+declare function response:add-data($key as xs:string,$value as item()*)
 {
   map:put($response,$key,(map:get($response,$key),$value))
 };
 
+(:~
+ : Returns all slots defined in response
+ :)
 declare function response:slots()
 {
   for $slot in map:keys($response)[fn:starts-with(.,$SLOT-PREFIX)]
@@ -431,7 +456,7 @@ declare function response:slot($key)
 };
 (:~
  :
-~:)
+ :)
 declare function response:set-title($value)
 {
   map:put($response,"TITLE", 
@@ -442,7 +467,7 @@ declare function response:set-title($value)
 
 (:~
  : Set the title for the given response page
-~:)
+ :)
 declare function response:title()
 {
   map:get($response,"TITLE")
@@ -451,7 +476,7 @@ declare function response:title()
 (:~
  :META~
  
-~:)
+ :)
 declare function response:add-meta($key,$value)
 {
   map:put($response,fn:concat($META,$key),$value) 
@@ -489,7 +514,7 @@ declare function response:metas()
     }
 };
 
-(:~HTTP META~:)
+(:~HTTP META :)
 declare function response:add-httpmeta($key,$value)
 {
   map:put($response,fn:concat($HTTPMETA,$key),$value) 
@@ -549,38 +574,48 @@ declare function response:remove-cookie($name)
 };
 
 (:Javascript Response Functions:)
+(:~
+ : Retuns a list of all the javascripts defined in the response
+ :)
 declare function response:javascripts()
 {
   for $k in map:keys($response)[fn:starts-with(.,$JAVASCRIPT)]
   return
      fn:substring-after($k,$JAVASCRIPT)
 };
-
+(:~
+ : Adds a javascript by name and adds options to it.
+ :)
 declare function response:add-javascript(
 $name as xs:string,
 $position as xs:string,
 $options as element(response:options)
 ) {
    map:put($response,fn:concat($JAVASCRIPT,$name),
-   (<script type="text/javascript" src="{fn:concat("/resources/js",$name,".js")}">//</script>,
+   (<script type="text/javascript" src="{config:resource-directory()}/{$name}.js">//</script>,
      $options
      )
    )  
 };
-
+(:~
+ : Add a javscript library by name
+ :)
 declare function response:add-javascript($name)
 {
    map:put($response,fn:concat($JAVASCRIPT,$name),
-   <script type="text/javascript" src="{fn:concat("/resources/js",$name,".js")}">//</script>
-   
+   <script type="text/javascript" src="{config:resource-directory()}{$name}.js">//</script>
    )
 };
-
+(:~
+ : Removes a javascript by its name
+ :)
 declare function response:remove-javascript($name)
 {
   map:delete($response,fn:concat($JAVASCRIPT,$name))
 };
-
+(:~
+ : Clears out all javascripts for the output
+:)
 declare function response:clear-javascripts()
 {
   for $k in map:keys($response)[fn:starts-with(.,$JAVASCRIPT)]
@@ -588,45 +623,83 @@ declare function response:clear-javascripts()
 };
 
 (:Stylesheets:)
+(:~
+ : Returns all the stylesheets defined in the response
+ :)
 declare function response:stylesheets()
 {
   for $k in map:keys($response)[fn:starts-with(.,$STYLESHEET)]
   return
      fn:substring-after($k,$STYLESHEET)
 };
+(:~
+ : Adds a stylesheet by its name from the resource-directory in config.xml
+ :)
 declare function response:add-stylesheet($name)
 {
    map:put($response,fn:concat($STYLESHEET,$name),
-         <link rel="stylesheet" href="/resources/css/{$name}.css" type="text/css" media="all" />
+         <link rel="stylesheet" href="/{config:resource-directory()}/css/{$name}.css" type="text/css" media="all" />
    )
 };
+(:~
+ : Adds a stylesheet by name
+  :)
 declare function response:add-stylesheet($name as xs:string,$params as xs:string*)
 {
    map:put($response,fn:concat($STYLESHEET,$name),
-         <link rel="stylesheet" href="/resources/css/{$name}.css" type="text/css" media="all" />
+         <link rel="stylesheet" href="{config:resource-directory()}/css/{$name}.css" type="text/css" media="all" />
    )
 };
+(:~
+ : Removes a stylesheet from the response by name
+ : @param $name - The name of stylesheet to remove.
+ :)
 declare function response:remove-stylesheet($name)
 {
   map:delete($response,fn:concat($STYLESHEET,$name))
 };
-
+(:~
+ : Clears all response stylesheets
+  :)
 declare function response:clear-stylesheets()
 {
   for $k in map:keys($response)[fn:starts-with(.,$STYLESHEET)]
   return map:delete($response,$k)
 };
-
+(:~
+ : Sets the model for the response
+  :)
 declare function response:set-model($model as element(domain:model)?) {
   map:put($response,$MODEL,$model)
 };
-
+(:~
+ : Returns the model set for the response
+  :)
 declare function response:model() {
   map:get($response,$MODEL)
 };
+(:~
+ : Sets the is-download to a given value
+ :)
 declare function response:is-download($value as xs:boolean) {
   map:put($response,$DOWNLOAD,$value)
 };
+
+(:~
+ : Returns if the response is a download. This will set the Content-Disposition header as an attachment.
+:)
 declare function response:is-download() as xs:boolean {
   map:get($response,$DOWNLOAD) = fn:true()
+};
+(:~
+ : Sets the response code
+ :)
+declare function response:set-code($code as xs:integer) {
+  map:put($response,$CODE,$code)
+};
+(:~
+ : Returns the response code 
+  :)
+declare function response:code() {
+   map:get($response,$CODE)
 };

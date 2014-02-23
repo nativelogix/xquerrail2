@@ -2,7 +2,7 @@ xquery version "1.0-ml";
 (:~
  : Module provides evaluation support to allow the creation 
  : of nodes in a seperate transaction context.
-~:)
+ :)
 module namespace eval = "http://xquerrail.com/eval";
 
 import module namespace domain = "http://xquerrail.com/domain"
@@ -12,7 +12,7 @@ declare option xdmp:mapping "false";
 
 (:~
  : Evaluation statements
-~:)
+ :)
 declare function eval-create(
     $model as element(domain:model),
     $params as map:map

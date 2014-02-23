@@ -19,7 +19,7 @@ declare function test:implements() as xs:QName*
 
 (:~
  : Add something before the response
-~:)
+ :)
 declare function test:before-request(
   $configuration as element()?
 )  as map:map {
@@ -30,7 +30,7 @@ declare function test:before-request(
 
 (:~
  : Add something before the response
-~:)
+ :)
 declare function test:after-request(
   $request as map:map,
   $configuration as element()?
@@ -41,7 +41,7 @@ declare function test:after-request(
 
 (:~
  : Add something before the response
-~:)
+ :)
 declare function test:before-response(
   $request as map:map,
   $response as item(),
@@ -59,7 +59,7 @@ declare function test:before-response(
 };
 (:~
  : 
-~:)
+ :)
 declare function test:after-response(
    $request as map:map,
    $response as item()*,
