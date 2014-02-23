@@ -1,0 +1,6 @@
+[submodule "src/_framework/lib/xray"]
+	path = src/_framework/lib/xray
+	url = https://github.com/robwhitby/xray.git
+[submodule "src/_framework/lib/xqdocs"]
+	path = src/_framework/lib/xqdocs
+	url = https://github.com/xquery/xquerydoc.git

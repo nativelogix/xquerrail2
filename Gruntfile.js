@@ -27,7 +27,7 @@ module.exports = function(grunt) {
     },
     watch: {
       scripts: {
-        files: ['src/demo/**/*.*'],
+        files: ['src/**/*-domain.xml'],
         tasks: ['refresh_cache'],
         options: {
           spawn: false,
