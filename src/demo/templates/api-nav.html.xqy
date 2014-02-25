@@ -3,8 +3,17 @@ import module namespace response = 'http://xquerrail.com/response'
     at '/_framework/response.xqy';
 declare variable $response as map:map external;
 response:initialize($response),
-<div class="row">
+<div class="row-fluid">
    <h3><span class="icon-search"></span>API Browser</h3>
+   <select name="applications">
+      <option value="_framework">XQuerrail</option>
+      {
+          for $app in response:get-data("applications")
+          return
+            <option value="{$app/@uri}">{fn:data($app/@name)}</option>
+
+      }
+   </select>
    <ul class="nav nav-list">
     {
      let $group := ""
@@ -24,7 +33,7 @@ response:initialize($response),
               "")
        }()
         return ( 
-            if($group = $header) then () else <li><h3>{fn:data($header)}</h3></li>,xdmp:set($group,$header),
+            if($group = $header) then () else <li><h5>{fn:data($header)}</h5></li>,xdmp:set($group,$header),
             <li>
             {if(response:data("link") = $doc/*:link) then attribute class {"active","api-link"} else attribute class {"api-link"}}
             <a href="/api/_/{$doc/*:link}">{fn:data($doc/*:title)}</a></li>
@@ -33,7 +42,7 @@ response:initialize($response),
             <div class="alert">
               <button type="button" class="close" data-dismiss="alert">&times;</button>
               <strong>Document not available.</strong> Would you like to generate now?
-              <a id="generate-docs" href="generate.html">Generate</a>
+              <a id="generate-docs" href="/api/generate.html">Generate</a>
             </div>
      }   
    </ul>

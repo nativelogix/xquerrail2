@@ -2,8 +2,9 @@ xquery version "1.0-ml";
 
 module namespace model = "http://xquerrail.com/demo/model/apidoc";
 
+import module namespace config = "http://xquerrail.com/config" at "/_framework/config.xqy";
 import module namespace domain = "http://xquerrail.com/domain" at "/_framework/domain.xqy";
-import module namespace xqdocs = "http://github.com/xquery/xquerydoc" at "/_framework/lib/xqdocs/xquery/ml-xquerydoc.xq";
+import module namespace xqdocs = "http://github.com/xquery/xquerydoc" at "/_framework/lib/xqdocs/src/xquery/xquerydoc.xq";
 import module namespace base  = "http://xquerrail.com/model/base" at "/_framework/base/base-model.xqy";
 
 declare namespace dir = "http://marklogic.com/xdmp/directory";
@@ -11,7 +12,10 @@ declare namespace xqd = "http://www.xqdoc.org/1.0";
 
 declare option xdmp:mapping "false";
 
-declare function model:filesystem-filter($path as xs:string,$filter as xs:string) {
+declare function model:filesystem-filter(
+	$path as xs:string,
+	$filter as xs:string
+) {
   model:filesystem-filter($path,$filter,"*")
 };
 (:~
@@ -21,7 +25,10 @@ declare function model:filesystem-filter($path as xs:string,$filter as xs:string
  : @param $exclude - includes only the files that do not match a pattern.
  : @return - List of <file name="" path=""/>. The path is the full path of the file.
  :)
-declare function model:filesystem-filter($path as xs:string,$filter as xs:string,$exclude as xs:string) {
+declare function model:filesystem-filter(
+	$path as xs:string,
+	$filter as xs:string,
+	$exclude as xs:string) {
   let $entries := xdmp:filesystem-directory($path)
   return
     for $entry in $entries/dir:entry[(fn:matches(dir:filename,$filter) and fn:not(fn:matches(dir:pathname,$exclude))) or dir:type = "directory"]
@@ -34,13 +41,15 @@ declare function model:filesystem-filter($path as xs:string,$filter as xs:string
 
 (:Generated the documentation from :)
 declare function model:generate-xqdocs-from-filesystem(
+	$appname as xs:string,
 	$fs-path as xs:string,
-	$relpath as xs:string
+	$relpath as xs:string,
+	$exclude as xs:string
 )  {
 	let $module-root := xdmp:modules-root()
 	let $root := $fs-path
 	let $frameroot := $root || $relpath
-	let $files := model:filesystem-filter($frameroot,"\.(xqy|xsl)$","/(templates|views|lib)/")
+	let $files := model:filesystem-filter($frameroot,"\.(xqy|xq|xqm|xquery)$",$exclude)
 	let $generate := 
 		for $file at $pos in $files
 		return xdmp:spawn-function(function() {
@@ -52,7 +61,8 @@ declare function model:generate-xqdocs-from-filesystem(
 			let $namespace := $xqdoc//xqd:module/xqd:uri
 			let $moduleType := $xqdoc//xqd:module/@type
 			let $params := map:new((
-			  map:entry("link",$fname),
+			  map:entry("application",$appname),
+			  map:entry("link",$relpath || "/" || $fname),
 			  map:entry("header",($folder,"Core")[1]),
 			  map:entry("order",$pos),
 			  map:entry("title",$fname),
@@ -67,11 +77,30 @@ declare function model:generate-xqdocs-from-filesystem(
   		
 		)},
 	  <options xmlns="xdmp:eval">
-	  <transaction-mode>update</transaction-mode>
-    </options> )
-		
+	      <transaction-mode>update</transaction-mode>
+      </options> 
+    )	
 	return ()
 };
+
+(:~
+ : Generates the XQueryDocs for the _framework.
+ :)
 declare function  model:generate-framework-xqdocs() {
-  generate-xqdocs-from-filesystem(xdmp:modules-root(),"_framework")
+  generate-xqdocs-from-filesystem("XQuerrail",xdmp:modules-root(),"_framework","/(templates|views|lib)/")
+};
+
+(:~
+ : Gets a list of all applications defined in the config.xml
+ :)
+declare function model:get-applications() {
+  config:get-applications()
+};
+
+(:~
+ : Generates an application API Documentation.
+ : @param $appname Name of the application
+ :)
+declare function model:generate-application-xqdocs($appname) {
+  generate-xqdocs-from-filesystem($appname,xdmp:modules-root(),config:get-application($appname)/@uri,"/(templates|views)/")
 };

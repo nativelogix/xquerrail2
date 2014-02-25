@@ -36,6 +36,7 @@ declare function controller:index() {
   return (
    response:set-template("two-columns"),
    response:set-body($list),
+   response:set-data("applications",api-model:get-applications()),
    response:set-slot("sidebar",<?template name="api-nav"?>),
    response:flush()
 )};

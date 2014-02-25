@@ -185,6 +185,7 @@
     </model> 
     <model name="apidoc" key="uuid" keyLabel="title" persistence="directory" label="Document" extends="base">
         <directory>/apidocs/</directory>
+        <element name="app"  type="string" label="Application"></element>
         <element name="link" type="string" label="Link"></element>
         <element name="header" type="string" label="Header Before"></element>
         <element name="order" type="integer" label="List Order"></element>

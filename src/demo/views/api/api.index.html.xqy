@@ -21,6 +21,7 @@ response:initialize($response),
      return
        if($apidocs) then
         for $doc in $apidocs
+        let $application := $doc/*:application
         let $header := function() {
             let $value := $doc/*:header
             let $size := fn:string-length($value)
@@ -33,7 +34,10 @@ response:initialize($response),
               "")
        }()
         return ( 
-            if($group = $header) then () else <tr><td colspan="4"><h3>{fn:data($header)}</h3></td></tr>,xdmp:set($group,$header),
+            if($group = $header) then () else 
+            <tr>
+              <td colspan="4"><h5>{fn:data($header)}</h5></td></tr>,
+              xdmp:set($group,$header),
             <tr>
             {if(response:data("link") = $doc/*:link) then attribute class {"active","api-link"} else attribute class {"api-link"}}
             <td>{fn:data($doc/*:moduleType)}</td>

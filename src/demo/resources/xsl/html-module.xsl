@@ -34,12 +34,20 @@ version="2.0">
 
   <xsl:template match="doc:module">
     <h4><span class="icon-cog"></span><xsl:value-of select="doc:uri"/></h4>
-    <xsl:if test="@type = 'library'">
-    <code xml:space="preserve">
-      import module namespace <xsl:value-of select="@prefix"/> = "<xsl:value-of select="doc:uri"/>"
-          at "<xsl:value-of select="$location"/>";
-    </code>
-  </xsl:if>
+    <xsl:choose>
+         <xsl:when test="@type = 'library'">
+          <code xml:space="preserve">
+            import module namespace <xsl:value-of select="@prefix"/> = "<xsl:value-of select="doc:uri"/>"
+                at "/<xsl:value-of select="$location"/>";
+          </code>
+        </xsl:when>
+        <xsl:otherwise>
+          <code xml:space="preserve">
+          xdmp:invoke("/<xsl:value-of select="$location"/>");
+          </code>
+        </xsl:otherwise>
+    </xsl:choose>
+    <hr/>
     <xsl:apply-templates select="*[not(name(.) eq 'doc:uri')]"/>
   </xsl:template>
 

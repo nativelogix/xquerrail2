@@ -8,18 +8,20 @@ declare default element namespace "http://www.w3.org/1999/xhtml";
         <body>
             <?template name="nav"?>
             <div class="container-fluid">
-                <div class="row">
-                    <div class="offset1 span2">
+                <div class="row-fluid">
+                    <div class="span3 well">
                         <?slot name="sidebar"?>
                           <?template name="sidebar"?>
                         <?endslot?>
                     </div>
-                    <div class="span10">
+                    <div class="span9">
                         <?view?>
                     </div>
                 </div>
+                <div class="row-fluid">
                 <hr/>   
                 <?template name="footer"?>
+                </div>
             </div> <!-- /container -->
             <?template name="scripts"?>
     </body>

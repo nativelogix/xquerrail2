@@ -1,5 +1,5 @@
-<div xmlns="http://www.w3.org/1999/xhtml" class="span12">
-  <div class="row">
+<div xmlns="http://www.w3.org/1999/xhtml" class="span11">
+  <div class="row-fluid">
     <span class="breadcrumb span12">/ <a href="/api/"> API </a> / <b><?echo fn:string(response:body()/*:apidoc/*:title)?></b>&nbsp;
         <span class="pull-right">
             <span class="icon-edit"></span>

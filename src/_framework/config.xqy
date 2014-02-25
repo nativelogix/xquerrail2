@@ -118,7 +118,7 @@ declare function config:refresh-app-cache() {
  : Returns a list of applications from the config.xml. 
  :)
 declare function config:get-applications() {
-   $CONFIG/domain:application
+   $CONFIG/config:application
 };
 
 

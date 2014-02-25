@@ -3,7 +3,7 @@ xquery version "1.0-ml";
  : Controls all interaction with an application domain.  The domain provides annotations and 
  : definitions for dynamic features built into XQuerrail.  
  : @version 2.0
- :)
+ :) 
 module namespace domain = "http://xquerrail.com/domain";
 
 import module namespace config = "http://xquerrail.com/config"
