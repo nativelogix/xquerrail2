@@ -170,10 +170,12 @@ declare function engine:render-json($node)
    let $is-listable := $node instance of element(list) 
    let $is-lookup   := $node instance of element(lookups)
    let $is-searchable := $node instance of element(search:response)
+   let $is-suggestable := $node instance of element(s)
    let $model := 
       if($is-listable or $is-lookup)
       then domain:get-domain-model($node/@type)
       else if($is-searchable) then () 
+      else if($is-suggestable) then ()
       else domain:get-domain-model(fn:local-name($node)) 
    let $_ := xdmp:log(($model,"Body:::",xdmp:describe($node)),"debug")
    return
@@ -201,6 +203,8 @@ declare function engine:render-json($node)
           ))     
      else if($is-searchable) then 
         engine:render-search-results($node)
+     else if($is-suggestable) then 
+        json:to-array($node/* ! fn:string(.))
      else if($model) then (
              model-helper:to-json($model,$node)
           )
