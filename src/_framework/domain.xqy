@@ -445,8 +445,7 @@ declare function domain:get-domain-model(
                      }
             else $model
          return ($extends,domain:set-model-cache($cache-key,$extends))
-    return element domain:domain { $domain/@*, $domain/domain:name,  $models } / domain:model
-
+    return element domain:domain { $domain/@*, $domain/domain:name, $domain/*[. except $domain/domain:model], $models } / domain:model
 };
 (:~
  : Returns a list of all defined controllers for a given application domain
@@ -1023,7 +1022,7 @@ declare function domain:get-field-collation($field as element()) as xs:string {
    if($field/@collation) then $field/@collation
    else if($field/ancestor::domain:model/@collation) then $field/ancestor::domain:model/@collation
    else if($field/ancestor::domain:domain/domain:default-collation) then $field/ancestor::domain:domain/domain:default-collation
-   else $COLLATION
+   else fn:error(xs:QName("COLLATION-ERROR"), "No collation defined for domain")
 };
 
 (:~
@@ -1057,17 +1056,17 @@ declare function domain:get-model-uniqueKey-constraint-query(
                if($id-value) then 
                  typeswitch($id-field)
                    case element(domain:element) return
-                        cts:element-range-query(fn:QName(domain:get-field-namespace($id-field),$id-field/@name),"=",$id-value,("collation=http://marklogic.com/collation/codepoint"))
+                        cts:element-range-query(fn:QName(domain:get-field-namespace($id-field),$id-field/@name),"=",$id-value,("collation=" || domain:get-field-collation($id-field)))
                    case element(domain:attribute) return
-                        cts:element-attribute-range-query(fn:QName(domain:get-field-namespace($model),$model/@name),xs:QName($id-field/@name),"=",$id-value,("collation=http://marklogic.com/collation/codepoint"))
+                        cts:element-attribute-range-query(fn:QName(domain:get-field-namespace($model),$model/@name),xs:QName($id-field/@name),"=",$id-value,("collation=" || domain:get-field-collation($id-field)))
                    default return ()
                 else ()
             else 
              typeswitch($id-field)
                   case element(domain:element) return
-                    cts:element-range-query(fn:QName(domain:get-field-namespace($id-field),$id-field/@name),"!=",$id-value,("collation=http://marklogic.com/collation/codepoint"))
+                    cts:element-range-query(fn:QName(domain:get-field-namespace($id-field),$id-field/@name),"!=",$id-value,("collation="  || domain:get-field-collation($id-field)))
                   case element(domain:attribute) return
-                       cts:element-attribute-range-query(fn:QName(domain:get-field-namespace($model),$model/@name),xs:QName($id-field/@name),"!=",$id-value,("collation=http://marklogic.com/collation/codepoint"))
+                       cts:element-attribute-range-query(fn:QName(domain:get-field-namespace($model),$model/@name),xs:QName($id-field/@name),"!=",$id-value,("collation=" || domain:get-field-collation($id-field)))
                   default return ()
      let $unique-fields := domain:get-model-uniqueKey-constraint-fields($model)
      let $constraint-query := 
@@ -1115,17 +1114,17 @@ declare function domain:get-model-unique-constraint-query($model as element(doma
           if($id-value) then 
               typeswitch($id-field)
                 case element(domain:element) return
-                  cts:element-range-query(fn:QName(domain:get-field-namespace($id-field),$id-field/@name),"=",$id-value,("collation=http://marklogic.com/collation/codepoint"))
+                  cts:element-range-query(fn:QName(domain:get-field-namespace($id-field),$id-field/@name),"=",$id-value,("collation=" || domain:get-field-collation($id-field)))
                 case element(domain:attribute) return
-                     cts:element-attribute-range-query(fn:QName(domain:get-field-namespace($model),$model/@name),xs:QName($id-field/@name),"=",$id-value,("collation=http://marklogic.com/collation/codepoint"))
+                     cts:element-attribute-range-query(fn:QName(domain:get-field-namespace($model),$model/@name),xs:QName($id-field/@name),"=",$id-value,("collation=" || domain:get-field-collation($id-field)))
                 default return ()
               else ()
           else if($id-value) then 
               typeswitch($id-field)
                 case element(domain:element) return
-                  cts:element-range-query(fn:QName(domain:get-field-namespace($id-field),$id-field/@name),"!=",$id-value,("collation=http://marklogic.com/collation/codepoint"))
+                  cts:element-range-query(fn:QName(domain:get-field-namespace($id-field),$id-field/@name),"!=",$id-value,("collation=" || domain:get-field-collation($id-field)))
                 case element(domain:attribute) return
-                     cts:element-attribute-range-query(fn:QName(domain:get-field-namespace($model),$model/@name),xs:QName($id-field/@name),"!=",$id-value,("collation=http://marklogic.com/collation/codepoint"))
+                     cts:element-attribute-range-query(fn:QName(domain:get-field-namespace($model),$model/@name),xs:QName($id-field/@name),"!=",$id-value,("collation=" || domain:get-field-collation($id-field)))
                 default return ()
               else ()
      let $unique-fields := domain:get-model-unique-constraint-fields($model)

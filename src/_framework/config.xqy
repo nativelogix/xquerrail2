@@ -390,7 +390,7 @@ $domain as element(domain:domain)
          namespace domain {"http://xquerrail.com/domain"},
          attribute xmlns {"http://xquerrail.com/domain"},
          $domain/@*,
-         $domain/(domain:name|domain:content-namespace|domain:application-namespace|domain:description|domain:author|domain:version|domain:declare-namespace|domain:default-collection),
+         $domain/(domain:name|domain:content-namespace|domain:application-namespace|domain:description|domain:author|domain:version|domain:declare-namespace|domain:default-collation),
          ($domain/domain:model,$imports/domain:model),
          ($domain/domain:optionlist,$imports/domain:optionlist),
          ($domain/domain:controller,$imports/domain:controller),

@@ -13,7 +13,12 @@
    <route id="initialize" pattern="^/initialize(.xqy)?$" is-resource="true">
       <to>/_framework/initialize.xqy</to>
    </route>
-   
+   <route id="xray_index" pattern="^/xray/?$" is-resource="true">
+     <to>/_framework/lib/xray/index.xqy</to>
+   </route>
+   <route id="xray" pattern="^/xray/.*" is-resource="true">
+     <prepend>/_framework/lib/</prepend>
+   </route>
    <route id="demo_index" pattern="^/$">
       <default key="_controller">demo:default:index:html</default>      
    </route>
