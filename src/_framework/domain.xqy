@@ -24,6 +24,8 @@ declare variable $DOMAIN-NODE-FIELDS :=
    for  $fld in ("domain:container","domain:element","domain:attribute") 
    return  xs:QName($fld);
 
+declare variable $COLLATION := "http://marklogic.com/collation/codepoint";
+
 (:~
  : Holds a cache of all the domain models
  :)
@@ -1021,7 +1023,7 @@ declare function domain:get-field-collation($field as element()) as xs:string {
    if($field/@collation) then $field/@collation
    else if($field/ancestor::domain:model/@collation) then $field/ancestor::domain:model/@collation
    else if($field/ancestor::domain:domain/domain:default-collation) then $field/ancestor::domain:domain/domain:default-collation
-   else "http://marklogic.com/collation/codepoint"
+   else $COLLATION
 };
 
 (:~

@@ -23,8 +23,6 @@ declare default collation "http://marklogic.com/collation/codepoint";
 (:Options Definition:)
 declare option xdmp:mapping "false";
 
-declare variable $COLLATION := "http://marklogic.com/collation/codepoint";
-
 declare variable $binary-dependencies := map:map();
 declare variable $current-identity := ();
 
@@ -1332,7 +1330,10 @@ declare function model:build-search-options(
     let $nav := $domain-model/domain:navigation
     let $constraints := 
             for $prop in $properties[domain:navigation/@searchable = "true"]
-            let $type := ($prop/domain:navigation/@searchType,"value")[1]
+            let $prop-nav := $prop/domain:navigation
+            let $type := (
+                $prop/domain:navigation/@searchType,
+                if($prop-nav/(@suggestable|@facetable) = "true") then "range" else  "value")[1]
             let $facet-options := 
                 $prop/domain:navigation/search:facet-option
             let $ns := domain:get-field-namespace($prop)
@@ -1340,7 +1341,7 @@ declare function model:build-search-options(
             return
                 <search:constraint name="{$prop/@name}" label="{$prop/@label}">{
                   element { fn:QName("http://marklogic.com/appservices/search",$type) } {
-                        attribute collation {$COLLATION},
+                        attribute collation {domain:get-field-collation($prop)},
                         if ($type eq 'range') 
                         then attribute type { domain:resolve-ctstype($prop) }
                         else attribute type {"xs:string"},
@@ -1360,14 +1361,15 @@ declare function model:build-search-options(
       let $suggestOptions :=  
         for $prop in $properties[domain:navigation/@suggestable = "true"]
         let $type := ($prop/domain:navigation/@searchType,"value")[1]
+        let $collation := domain:get-field-collation($prop)
         let $facet-options := 
         $prop/domain:navigation/search:facet-option
         let $ns := domain:get-field-namespace($prop)
         let $prop-nav := $prop/domain:navigation
         return
-            <search:constraint name="{$prop/@name}" label="{$prop/@label}">{
-              element { fn:QName("http://marklogic.com/appservices/search",$type) } {
-                    attribute collation {$COLLATION},
+            <search:suggestion-source ref="{$prop/@name}">{
+              element { fn:QName("http://marklogic.com/appservices/search","range") } {
+                    attribute collation {$collation},
                     if ($type eq 'range') 
                     then attribute type { "xs:string" }
                     else (),
@@ -1380,13 +1382,14 @@ declare function model:build-search-options(
                     }</search:element>,
                     $facet-options
               }
-            }</search:constraint>
+            }</search:suggestion-source>
       let $sortOptions := 
          for $prop in $properties[domain:navigation/@sortable = "true"]
+         let $collation := domain:get-field-collation($prop)
          let $ns := domain:get-field-namespace($prop)
          return
             ( <search:state name="{$prop/@name}">
-                 <search:sort-order direction="ascending" type="{$prop/@type}" collation="{$COLLATION}">
+                 <search:sort-order direction="ascending" type="{$prop/@type}" collation="{$collation}">
                   <search:element ns="{$ns}" name="{$prop/@name}"/>
                  </search:sort-order>
                  <search:sort-order>
@@ -1394,7 +1397,7 @@ declare function model:build-search-options(
                  </search:sort-order>
             </search:state>,
             <search:state name="{$prop/@name}-descending">
-                 <search:sort-order direction="descending" type="{$prop/@type}" collation="{$COLLATION}">
+                 <search:sort-order direction="descending" type="{$prop/@type}" collation="{$collation}">
                   <search:element ns="{$ns}" name="{$prop/@name}"/>
                  </search:sort-order>
                  <search:sort-order>
@@ -1421,10 +1424,11 @@ declare function model:build-search-options(
                 <search:return-facets>{fn:true()}</search:return-facets>
                 <search:additional-query>{$addQuery}</search:additional-query>
                 <search:suggestion-source>{
-                    $domain-model/search:options/search:suggestion-source/(@*|node()),
-                    $suggestOptions
+                    $domain-model/search:options/search:suggestion-source/(@*|node())
                 }</search:suggestion-source>
+
                 {$constraints,
+                 $suggestOptions,
                  $domain-model/search:options/search:constraint
                 }
                 <search:operator name="sort">{
@@ -1478,7 +1482,7 @@ as xs:string*
    let $options := model:build-search-options($domain-model,$params)
    let $query := map:get($params,"query")
    let $limit := (map:get($params,"limit"),10)[1] cast as xs:integer
-   let $position := (map:get($params,"position"),1)[1] cast as xs:integer
+   let $position := (map:get($params,"position"),fn:string-length($query[1]))[1] cast as xs:integer
    let $focus := (map:get($params,"focus"),1)[1] cast as xs:integer
    return
        search:suggest($query,$options,$limit,$position,$focus)
