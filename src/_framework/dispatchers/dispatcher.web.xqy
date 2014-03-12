@@ -32,6 +32,8 @@ import module namespace interceptor = "http://xquerrail.com/interceptor" at "/_f
 import module namespace base        = "http://xquerrail.com/controller/base" at "/_framework/base/base-controller.xqy";
 
 declare namespace dispatcher     = "http://xquerrail.com/dispatcher";
+
+declare namespace extension      = "http://xquerrail.com/controller/extension";
 declare namespace controller     = "http://xquerrail.com/controller";
 declare namespace engine         = "http://xquerrail.com/engine";
 declare namespace html           = "http://www.w3.org/1999/xhtml";
@@ -46,7 +48,7 @@ declare option xdmp:output "indent-untyped=yes";
 declare option xdmp:ouput "omit-xml-declaration=yes";
 
 declare variable $controller:REPORT-HTML-ERRORS as xs:boolean := fn:true();
-declare variable $CONTROLLER-PATH := "/controller/";
+declare variable $CONTROLLER-PATH := config:controller-base-path();
 (:~
  : Returns whether the controller exists or not.
  :)
@@ -59,6 +61,31 @@ declare function dispatcher:controller-exists($controller-uri as xs:string) as x
 		)
 	else
 		xdmp:uri-is-file($controller-uri)
+};
+
+declare function dispatcher:extension-exists(
+){
+   fn:exists(config:controller-extension())
+};
+(:~
+ : Determines if the extension for the controller exists or a plugin exists.
+~:)
+declare function dispatcher:extension-action-exists(
+  $action as xs:string
+) as xs:boolean {
+   let $extension := config:controller-extension()
+   let $location :=  $extension/@resource
+   let $eval := 
+      <node>import module namespace func = "http://xquerrail.com/controller/extension" at '{$location}';
+       fn:function-available("func:{$action}",0)
+     </node>
+   return      
+    try {xdmp:eval($eval)}catch($ex){(
+       if($ex//error:code = (("XDMP-IMPMODNS","SVC-FILOPN")))
+       then xdmp:log(fn:concat("action-not-exist::",$location,"::",$ex//error:format-string),"debug")
+       else xdmp:rethrow() 
+       ,fn:false()
+    )}
 };
 
 (:~
@@ -149,6 +176,10 @@ declare function dispatcher:invoke-controller()
         let $controller-func := xdmp:function(fn:QName($controller-uri,$action),$controller-location)
         return
            $controller-func()
+     else if(dispatcher:extension-exists()) then 
+          let $extension-action := xdmp:function(xs:QName("extension:" || $action),config:controller-extension()/@resource)
+          return 
+            $extension-action()
      (:Check if controller exists and a controller is defined:)
      else if(fn:function-available("base:" || $action ) and fn:exists(domain:get-controller($application,$controller))) then (
           base:initialize(request:request()),
@@ -160,7 +191,7 @@ declare function dispatcher:invoke-controller()
 };
 
 (:~
- : Renders the output 
+ :   Creates the appropriate engine and generates the output response
  :)
 declare function dispatcher:invoke-response($response,$request)
 {
@@ -240,7 +271,6 @@ declare function dispatcher:invoke-response($response,$request)
                   then (xdmp:log(("NO VIEW",$view-uri)), $response)
                   else fn:error(xs:QName("INVALID-RESPONSE"),"Invalid Response",($response))        
 };
-
 try {
    (:Initialize Interceptors:)
    let $init := interceptor:before-request()

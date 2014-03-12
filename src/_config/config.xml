@@ -23,6 +23,8 @@
     <anonymous-user value="anonymous"/> 
     
     <dispatcher resource="/_framework/dispatchers/dispatcher.web.xqy"/>
+    <controller resource="/_framework/base/base-controller.xqy"/>
+    <controller-extension  resource="/_extensions/controller.extension.xqy"/>
     
     <!--Register Default Values for engine-->
     <default-engine value="engine.html"/>
@@ -32,7 +34,7 @@
     <default-format value="html"/>
     <default-template value="main"/>
     <default-template-directory resource="/application/templates/"/>
-    <default-view-directory resources="/application/views/"/>    
+    <default-view-directory resources="/application/views/"/> 
     
     <!--Register Your Application(s) Here-->
     <application name="demo" namespace="http://xquerrail.com/demo" uri="/demo">
@@ -71,5 +73,5 @@
         <property name="resource-path" resource="js"/>
         <property name="css-path" resource="css"/>
         <property name="js-path"  resource="js"/>
-    </properties>
+    </properties>    
 </config>

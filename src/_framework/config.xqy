@@ -498,15 +498,39 @@ declare function config:controller-suffix() as xs:string {
   $CONFIG/config:controller-suffix
 };
 
+declare function config:property(
+  $name as xs:string
+) {
+  config:property($name,())
+};
 (:~
  : Returns a property defined in the $CONFIG/config:properties/config:property. 
  : The value can be specified by either resource/value or text() attribute
  : @param $name - name of the resource property to return
  :)
-declare function config:property($name as xs:string)  as item(){
+declare function config:property(
+  $name as xs:string,
+  $default as xs:string?
+  )  as xs:string?{
   let $value := $CONFIG/config:properties/config:property[@name = $name]/(@resource|@value|text())[1]
   return 
   if($value instance of attribute()) 
   then fn:data($value) 
-  else $value
+  else if($default) then $default
+  else fn:error(xs:QName("INVALID-PROPERTY"),"Missing Property Configuration")
+};
+(:~
+ : Returns the configurations for any controller extension
+~:)
+declare function config:controller-extension() {
+   $CONFIG/config:controller-extension
+};
+(:~
+ : Returns default path for the controller.
+ :)
+declare function config:controller-base-path()  as xs:string
+{
+   (
+   $CONFIG/config:controller-base-path/@value,
+    "/controller/")[1]
 };
