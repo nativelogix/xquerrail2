@@ -33,7 +33,7 @@ let $actions :=
 return
 <div class="box">
   <div class="box-header">
-      <span class="title"> {$labels[1]}&nbsp;<?title?></span>
+      <h3 class="title"> {$labels[1]}&nbsp;<?title?></h3>
   </div>   
   <div class="box-content">
      <form id="form_{response:controller()}" name="form_{response:controller()}"  class="fill-up form-horizontal" method="post"
@@ -44,12 +44,7 @@ return
         }        
         {$actions}
         <div class="row-fluid"> 
-            <div class="span8">
-                 <ul  class="padded separate-sections">
-                    {for $field in form:build-form($domain-model,$response)
-                   return <li class="input">{$field}</li>}
-                 </ul>
-                 <div class="clearfix"></div>
+            <div class="span8">{form:build-form($domain-model,$response)} <div class="clearfix"></div>
             </div>
            </div>
            <div class="form-actions"> 

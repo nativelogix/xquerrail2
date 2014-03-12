@@ -22,9 +22,7 @@ let $labels :=
         ("New", "Create") 
 return
   <div class="box">
-    <div class="box-header">
-      <span class="title"> {$labels[1]}&nbsp;<?title?></span>
-    </div>
+    <h3 class="title"> {$labels[1]}&nbsp;<?title?></h3>
     <div class="box-content">
       <form id="form_{response:controller()}" name="form_{response:controller()}" class="fill-up form-horizontal" method="post" action="/{response:controller()}/save.html">
         {if($domain-model//domain:element[@type = ("binary","file") or domain:ui/@type eq "fileupload"])
@@ -32,12 +30,7 @@ return
           else ()
          } 
         <div class="row-fluid"> 
-            <div class="span8">
-                <ul class="padded separate-sections">         
-              {for $field in form:build-form($domain-model,$response)
-              return <li class="input">{$field}</li>}
-              </ul>
-            </div>
+            <div class="span8">{form:build-form($domain-model,$response)}</div>
         </div>
         <div class="form-actions"> 
                 <button type="submit" class="btn btn-primary" href="#">{$labels[2]}

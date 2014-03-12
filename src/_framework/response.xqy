@@ -603,7 +603,14 @@ $options as element(response:options)
 declare function response:add-javascript($name)
 {
    map:put($response,fn:concat($JAVASCRIPT,$name),
-   <script type="text/javascript" src="{config:resource-directory()}{$name}.js">//</script>
+   let $url := 
+      fn:concat(
+        config:resource-directory(),
+        if(fn:ends-with(config:resource-directory(),"/")) then () else "/",
+        $name,
+        ".js")
+   return
+       <script type="text/javascript" src="{$url}">//</script>
    )
 };
 (:~

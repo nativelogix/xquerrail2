@@ -527,16 +527,16 @@ declare function engine:transform($node as item())
    else(
        typeswitch($node)
          case processing-instruction("template") return engine:transform-template($node)
-         case processing-instruction("view") return engine:transform-view($node) 
-         case processing-instruction("if") return engine:transform-if($node)
-         case processing-instruction("for") return engine:transform-for($node)
+         case processing-instruction("view")     return engine:transform-view($node) 
+         case processing-instruction("if")       return engine:transform-if($node)
+         case processing-instruction("for")      return engine:transform-for($node)
          case processing-instruction("has_slot") return engine:transform-has_slot($node)
-         case processing-instruction("slot") return engine:transform-slot($node)
-         case processing-instruction("echo") return engine:transform-echo($node)
-         case processing-instruction("xsl") return engine:transform-xsl($node)
-         case processing-instruction("to-json") return engine:transform-to-json($node)
-         case processing-instruction("role") return engine:transform-role($node)
-         case processing-instruction() return engine:transform-dynamic($node)
+         case processing-instruction("slot")     return engine:transform-slot($node)
+         case processing-instruction("echo")     return engine:transform-echo($node)
+         case processing-instruction("xsl")      return engine:transform-xsl($node)
+         case processing-instruction("to-json")  return engine:transform-to-json($node)
+         case processing-instruction("role")     return engine:transform-role($node)
+         case processing-instruction()           return engine:transform-dynamic($node)
          case element() return
            element {fn:node-name($node)}
            {
@@ -550,4 +550,34 @@ declare function engine:transform($node as item())
          case text() return $node
          default return $node
      )    
+};
+
+(:~
+ : Takes a sequence of parts and builds a uri normalizing out repeating slashes 
+ : @param $parts URI Parts to join
+ :)
+declare function engine:normalize-uri(
+  $parts as xs:string*
+) as xs:string {
+   engine:normalize-uri($parts,"")
+ };
+(:~
+ : Takes a sequence of parts and builds a uri normalizing out repeating slashes 
+ : @param $parts URI Parts to join
+ : @param $base Base path to attach to 
+~:)
+declare function engine:normalize-uri(
+  $parts as xs:string*,
+  $base as xs:string
+) as xs:string {
+  let $uri := 
+    fn:string-join(
+        fn:tokenize(
+          fn:string-join($parts ! fn:normalize-space(fn:data(.)),"/"),"/+")
+    ,"/")
+  let $final := fn:concat($base,$uri)
+  return  
+     if(fn:matches($final,"^(http(s)?://|/)"))
+     then $final
+     else "/" || $final 
 };

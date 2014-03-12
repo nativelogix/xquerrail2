@@ -228,7 +228,7 @@ declare function domain:resolve-ctstype(
    return 
      typeswitch($data-type)
      case element(uuid) return "xs:string"
-     case element(identity) return "xs:ID"
+     case element(identity) return "xs:string"
      case element(create-timestamp) return "xs:dateTime"
      case element(create-user) return "xs:string"
      case element(update-timestamp) return "xs:dateTime"
@@ -602,10 +602,12 @@ declare function domain:get-field-param-value(
     $field as element(),
     $params as map:map) {
   let $key := domain:get-field-id($field)
+  let $name-key := domain:get-field-name-key($field)
   let $key-value := map:get($params,$key)
   let $name-value := map:get($params,$field/@name)
+  let $namekey-value := map:get($params,$name-key)
   return
-    if($key-value) then $key-value else $name-value
+    if($key-value) then $key-value else if($namekey-value) then $namekey-value else $name-value
 };
 
 (:~

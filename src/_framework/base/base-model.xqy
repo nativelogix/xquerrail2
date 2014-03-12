@@ -37,7 +37,10 @@ declare function  model:get-identity(){
     return 
        (xdmp:set($current-identity,$id),$id)
  };
-(:Casts the value as a specific type:)
+
+(:~
+ :Casts the value as a specific type
+ :)
 declare function model:cast-value($field as element(),$value as item()?)
 {
    let $type := element {fn:QName("",$field/@type)} {""}
@@ -61,7 +64,10 @@ declare function model:cast-value($field as element(),$value as item()?)
         case element(schema-element) return $value
         default return $value
 };
-
+(:~
+ : Returns if the value is castable to the given value based on the field/@type
+ : @param $field Domain element (element|attribute|container)
+ :)
 declare function model:castable-value($field as element(),$value as item()?)
 {
    let $type := element {fn:QName("",$field/@type)} {""}
@@ -87,6 +93,7 @@ declare function model:castable-value($field as element(),$value as item()?)
         case element(query) return $value cast as cts:query?
         default return fn:true()
 };
+
 (:~
  : Generates a UUID based on the SHA1 algorithm.
  : Wallclock will be used to make the UUIDs sortable.
@@ -310,7 +317,7 @@ as element()?
       else   
         let $identity := model:generate-uuid()
         (: Validate the parameters before trying to build the document :)
-        let $validation :=  () (:model:validate($domain-model,$params):) 
+        let $validation :=  model:validate-params($domain-model,$params,"create") 
         return
          if(fn:count($validation) > 0) 
          then fn:error(xs:QName("VALIDATION-ERROR"), fn:concat("The document trying to be created contains validation errors"), $validation)    
@@ -546,7 +553,7 @@ declare function model:update-partial(
    return 
      if($current) then
         let $build := model:recursive-build($domain-model,$current,$params,fn:true())
-        let $validation := ()(:model:validate($domain-model,$params) :)
+        let $validation := model:validate-params($domain-model,$params,"update")
         let $computed-collections := model:build-collections(($domain-model/domain:collection,map:get($params,"_collection")),$domain-model,$build)
         return
             if(fn:count($validation) > 0) then
@@ -604,7 +611,7 @@ declare function model:update(
    return 
      if($current) then
         let $build := model:recursive-update($domain-model,$current,$params,$partial)
-        let $validation := () (: model:validate($domain-model,$params) :)
+        let $validation := model:validate-params($domain-model,$params,"update")
         let $computed-collections := model:build-collections(($domain-model/domain:collection,map:get($params,"_collection")),$domain-model,$build)
         return
             if(fn:count($validation) > 0) then
@@ -1630,7 +1637,7 @@ declare  function model:get-application-reference($field,$params){
 : @param $params the params to validate 
 : @return return a set of validation errors if any occur.
  :)
-declare function model:validate($domain-model as element(domain:model), $params as map:map,$mode as xs:string)
+declare function model:validate-params($domain-model as element(domain:model), $params as map:map,$mode as xs:string)
 as element(validationError)*
 {
    let $unique-constraints := domain:get-model-unique-constraint-fields($domain-model)
@@ -1654,12 +1661,12 @@ as element(validationError)*
             <error>Instance is not unique. Keys:{fn:string-join($uniqueKey-constraints/fn:data(@name),", ")}</error>
         </validationError>
       else (),      
-   for $element in $domain-model/(domain:attribute | domain:element)
+   for $element in $domain-model//(domain:attribute | domain:element)
    let $name := fn:data($element/@name)
    let $key := domain:get-field-id($element)
    let $type := domain:resolve-datatype($element)
-   let $value := model:build-value($element, map:get($params,$key),())
-   let $occurence := $element/@occurence
+   let $value := domain:get-field-param-value($element,$params)
+   let $occurence := $element/@occurrence
    return
         (
         if( fn:data($occurence) eq "?" and fn:not(fn:count($value) <= 1) )  then
@@ -1682,7 +1689,7 @@ as element(validationError)*
         return
             typeswitch($attribute)
             case attribute(required) return
-                if(fn:data($attribute) = "true" and fn:exists($value)) then 
+                if(fn:data($attribute) = "true" and fn:not(fn:exists($value))) then 
                     <validationError>
                         <element>{$name}</element>
                         <type>{fn:local-name($attribute)}</type>

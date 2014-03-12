@@ -176,7 +176,7 @@ declare function engine:render-json($node)
       then domain:get-domain-model($node/@type)
       else if($is-searchable) then () 
       else if($is-suggestable) then ()
-      else domain:get-domain-model(fn:local-name($node)) 
+      else () (:domain:get-domain-model(fn:local-name($node)) :)
    let $_ := xdmp:log(($model,"Body:::",xdmp:describe($node)),"debug")
    return
      if($is-listable and $model) then  
@@ -186,7 +186,7 @@ declare function engine:render-json($node)
             js:kv("pagesize",$node/pagesize cast as xs:integer),
             js:kv("totalpages",$node/totalpages cast as xs:integer),
             js:kv("totalrecords",$node/totalrecords cast as xs:integer),
-            js:e($node/@type,(
+            js:e($node/@type,js:a(
                for $n in $node/*[local-name(.) eq $model/@name]
                return 
                    model-helper:to-json($model,$n)
@@ -194,12 +194,12 @@ declare function engine:render-json($node)
          ))
      else if($is-lookup) then
           js:o ((
-             js:e("lookups",
+             js:e("lookups", js:a(
              for $n in $node/*:lookup
              return js:o((
                 js:kv("key",fn:string($n/*:key)),
                 js:kv("label",fn:string($n/*:label))
-             )))
+             ))))
           ))     
      else if($is-searchable) then 
         engine:render-search-results($node)

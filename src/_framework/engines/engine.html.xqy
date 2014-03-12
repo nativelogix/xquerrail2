@@ -8,6 +8,9 @@ import module namespace routing = "http://xquerrail.com/routing"    at "/_framew
 import module namespace domain = "http://xquerrail.com/domain"      at "/_framework/domain.xqy";
 import module namespace request = "http://xquerrail.com/request"    at "/_framework/request.xqy";
 import module namespace response = "http://xquerrail.com/response"  at "/_framework/response.xqy";
+import module namespace form = "http://xquerrail.com/helper/form"   at "/_framework/helpers/form-helper.xqy";
+import module namespace js = "http://xquerrail.com/helper/javascript" at "/_framework/helpers/javascript-helper.xqy";
+
    
 declare namespace tag = "http://xquerrail.com/tag";  
 
@@ -25,12 +28,15 @@ declare variable $context := map:map();
 
 (:~
  : Custom Tags the HTML Engine renders and handles during transform
- :)
+~:)
 declare variable $engine-tags := 
 (  
+
      xs:QName("engine:title"),
      xs:QName("engine:include-metas"),
      xs:QName("engine:include-http-metas"),
+     xs:QName("engine:application-script"),
+     xs:QName("engine:application-stylesheet"),
      xs:QName("engine:controller-script"),
      xs:QName("engine:controller-stylesheet"),
      xs:QName("engine:controller-list"),
@@ -40,12 +46,16 @@ declare variable $engine-tags :=
      xs:QName("engine:stylesheet-include"),
      xs:QName("engine:resource-include"),
      xs:QName("engine:image-tag"),
-     xs:QName("engine:controller-link")
+     xs:QName("engine:controller-link"),
+     xs:QName("engine:grid"),
+     xs:QName("engine:grid.column"),
+     xs:QName("engine:form")
+     (:xs:QName("engine:form.field"):)
 );
 
 (:~
  : Initialize the engine passing the request and response for the given object.
- :)
+~:)
 declare function engine:initialize($resp,$req){ 
     (
       let $init := 
@@ -61,7 +71,7 @@ declare function engine:initialize($resp,$req){
 };
 (:~
  : Some Common settings for html 
- :)
+~:)
 declare variable $html-strict :=        '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">';
 declare variable $html-transitional :=  '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
 declare variable $html-frameset :=      '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">';
@@ -72,7 +82,7 @@ declare variable $xhtml-1.1 :=          '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTM
 
 (:~
  : Returns a <meta/> element for use in http header
- :)
+~:)
 declare function engine:transform-include_metas($node as node())
 {
   response:metas()
@@ -80,7 +90,7 @@ declare function engine:transform-include_metas($node as node())
 
 (:~
  :  Renders out HTTP meta elements to header
- :)
+~:)
 declare function engine:transform-http_metas($node as node())
 {
   response:httpmetas()
@@ -89,7 +99,7 @@ declare function engine:transform-http_metas($node as node())
 (:~
  : Custom Tag for rendering Label or Title of Controller.  This is set using the
  : response:set-title("MY Title") function during controller invocation
- :)
+~:)
 declare function engine:transform-title($node as node())
 {
    response:title()
@@ -101,11 +111,15 @@ declare function engine:transform-title($node as node())
  : Generates a script element for the given controller.  If a controller 
  : script is defined in the template the system will check to see if the
  : file exists on the system before rendering any output
- :)
+~:)
 declare function engine:transform-controller-script($node)
 {
   let $script-directory := config:application-script-directory(response:application())
-  let $script-uri := fn:concat($script-directory,"/",response:controller(),".js")
+  let $script-uri := 
+    fn:concat(
+      $script-directory,
+      if(fn:ends-with($script-directory,"/")) then () else "/" ,
+      response:controller(),".js")
   
   return 
   if(response:controller() ne "" and engine:module-file-exists($script-uri)) 
@@ -120,7 +134,7 @@ declare function engine:transform-controller-script($node)
  : Generates a script element for the given controller.  If a controller 
  : script is defined in the template the system will check to see if the
  : file exists on the system before rendering any output
- :)
+~:)
 declare function engine:transform-controller-stylesheet($node)
 {
   let $stylesheet-directory := config:application-stylesheet-directory(response:application())
@@ -135,12 +149,57 @@ declare function engine:transform-controller-stylesheet($node)
           }
   else ()
 };
-
 (:~
  : Generates a script element for the given controller.  If a controller 
  : script is defined in the template the system will check to see if the
  : file exists on the system before rendering any output
- :)
+~:)
+declare function engine:transform-application-script($node)
+{
+  let $script-directory := config:application-script-directory(response:application())
+  let $script-uri := 
+    fn:concat(
+      $script-directory,
+      if(fn:ends-with($script-directory,"/")) then () else "/",
+      response:application(),".js"
+    )
+  let $_ := xdmp:log(($script-uri, engine:module-file-exists($script-uri)))
+  return 
+  if(response:controller() ne "" and engine:module-file-exists($script-uri)) 
+  then element script {
+          attribute type{"text/javascript"},
+          attribute src {$script-uri},
+          text{"//"}
+          }
+  else ()
+};
+(:~
+ : Generates a script element for the given application.  If a application 
+ : script is defined in the template the system will check to see if the
+ : file exists on the system before rendering any output
+~:)
+declare function engine:transform-application-stylesheet($node)
+{
+  let $stylesheet-directory := config:application-stylesheet-directory(response:application())
+  let $stylesheet-uri := 
+    fn:concat($stylesheet-directory,
+        if(fn:ends-with($stylesheet-directory,"/")) 
+        then () else "/",response:application(),".css")
+   return 
+  if(response:controller() ne "" and engine:module-file-exists($stylesheet-uri))  
+  then element link {
+          attribute type{"text/css"},
+          attribute href {$stylesheet-uri},
+          attribute rel {"stylesheet"},
+          text{""}
+          }
+  else ()
+};
+(:~
+ : Generates a script element for the given controller.  If a controller 
+ : script is defined in the template the system will check to see if the
+ : file exists on the system before rendering any output
+~:)
 declare function engine:transform-javascript-include($node)
 {
   let $script-directory := config:resource-directory() 
@@ -162,12 +221,146 @@ declare function engine:transform-javascript-include($node)
           }
   else fn:error(xs:QName("INCLUDE-ERROR"),"Invalid path:" || $script-uri)
 };
-
+(:~
+ :  Creates a jqGrid Control based on the columns specified
+ :)
+declare function engine:transform-grid($node) {
+   let $gridoptions  := xdmp:value("<grid " || fn:data($node) || "/>")
+   let $gridender    := $node/following-sibling::processing-instruction("endgrid")
+   let $gridcolumns  := $node/following-sibling::processing-instruction("grid.column")[. >> $node]
+   let $check := 
+      if($gridcolumns and fn:not(fn:exists($gridender))) 
+      then fn:error(xs:QName("TAG-ERROR"),"Missing <?endgrid?> when defining <?grid.column?>")
+      else ()
+  
+   let $gridcoldefs  :=
+     if($gridcolumns)  then 
+       for $def in $gridcolumns
+       let $coldef := xdmp:value("<col " || fn:data($def) || "/>")
+       return $coldef
+     else if($gridoptions/@columns) then 
+        fn:tokenize($gridoptions/@columns,"\s|,") ! fn:normalize-space(.) ! <col name="{.}"/>
+     else ()
+   let $domain-model := response:model()
+   let $model        := $domain-model
+   let $model-editable := fn:not($domain-model/domain:navigation/@newable eq "false")
+   let $modelName    := fn:data($domain-model/@name)
+   let $modelLabel   := (fn:data($domain-model/@label),$modelName)[1]
+   let $editButtons := 
+     js:json(
+       js:o((
+         js:kv("search",xs:boolean(($gridoptions/@searchable,"true")[1])),
+         js:kv("new",   xs:boolean(($gridoptions/@newable,"true")[1])),
+         js:kv("edit",  xs:boolean(($gridoptions/@editable,"true")[1])),
+         js:kv("delete",xs:boolean(($gridoptions/@removable,"true")[1])),
+         js:kv("show",  xs:boolean(($gridoptions/@showable,"false")[1])),
+         js:kv("import",xs:boolean(($gridoptions/@importable,"false")[1])),
+         js:kv("export",xs:boolean(($gridoptions/@exportable,"false")[1]))
+     )))
+   (:Editable:)
+   let $editAction := 
+      if($model-editable) 
+      then <node>window.location.href = "/{response:controller()}/edit.html?" + context.modelId +  '=' + rowid;</node>/text()
+      else <node>window.location.href = "/{response:controller()}/details.html?" + context.modelId +  '=' + rowid;</node>/text()
+   let $pager := 
+      if($gridoptions/@pager = "false") 
+      then ()
+      else  <div id="{response:controller()}_table_pager"> </div>
+   let $toolbar := 
+      if($gridoptions/@toolbar = "false") 
+      then ()
+      else <div id="toolbar" class="btn-group"></div>
+   let $gridCols := 
+      if($gridcoldefs) then 
+        js:json(js:array(
+          for $item in $gridcoldefs
+          let $field := $domain-model//(domain:element|domain:attribute)[@name = $item/@name]
+          let $options := map:new((
+              for $opt in $item/@*
+              return  
+                map:entry(fn:local-name($opt),fn:data($opt))
+            ))
+          return form:field-grid-column($field,$options)
+        ))
+      else 
+        js:json(js:array(
+          for $item in $domain-model//(domain:element|domain:attribute)
+          return form:field-grid-column($item)
+        ))
+   let $script := 
+       <script type="text/javascript">
+        {form:context($response)}
+        var _id = null;
+        var toolbarMode = {$editButtons};
+        /*initialize your grid model*/
+        var gridModel = {{
+            url: '/{response:controller()}/list.xml',
+            
+            pager: '#{response:controller()}_table_pager',
+            id : "{domain:get-model-identity-field-name(response:model())}",
+            colModel: {$gridCols},
+            sortname: '{$domain-model/element[@identity eq 'true']/@name}',
+            emptyrecords: "No {$modelLabel}s Found",
+            loadtext: "Loading {$modelLabel}s",
+            editAction: function(rowid) {{
+                {$editAction}
+            }}
+        }};
+    </script>
+    return  (
+      for $col in $gridcolumns return engine:consume($col),
+      engine:consume($gridender),
+      engine:consume($node),
+      engine:transform(<div id="{response:controller()}_grid">
+        {$toolbar}
+        {<table id="{response:controller()}_table" class="index-grid"></table>}
+        {$pager}
+        {$script}
+        <?resource-include "js/plugin/jqgrid/jquery.jqGrid.src.js"?>
+        <?resource-include "js/plugin/jqgrid/i18n/grid.locale-en.js"?>
+        <?resource-include "js/plugin/jqgrid/ui.jqgrid.css"?>
+        <?resource-include "js/plugin/jqgrid/ui.jqgrid.bootstrap.css"?>
+      </div>)
+    )
+};
+(:~
+ : Engine Transform Form
+~:)
+declare function engine:transform-form($node  as processing-instruction("form")) {
+  let $form := xdmp:value("<form "||fn:data($node)|| " />")
+  let $endform := $node/following-sibling::processing-instruction("endform")
+  let $model :=
+    if($form/@model) then domain:get-model(response:application(),$form/@model)
+    else response:model()
+  let $source := 
+    if($form/@source) 
+    then 
+      let $value := xdmp:value($form/@source)
+      let $response := response:response()
+      let $_ := map:put($response,"response:body",$value)
+      return $response
+    else response:response()
+  let $mode := if($form/@mode) then fn:data($form/@mode) else "edit"
+  let $action := $form/@url
+  let $method := 
+    if($form/@method)  
+    then fn:data($form/@method)
+    else "post"
+  let $multipart := 
+    if($model//domain:element[@type = ("binary","file") or domain:ui/@type eq "fileupload"])
+    then fn:true()
+    else fn:false()
+  return ( 
+    <form action="{$action}" method="{$method}">
+      {form:build-form($model,$source)}
+    </form>
+  )
+};
 (:~
  : Generates a script element for the given controller.  If a controller 
  : script is defined in the template the system will check to see if the
  : file exists on the system before rendering any output
- :)
+~:)
 declare function engine:transform-stylesheet-include($node)
 {
   let $resource := fn:data($node) ! fn:replace(.,"&quot;","") ! fn:normalize-space(.)
@@ -188,9 +381,6 @@ declare function engine:transform-stylesheet-include($node)
           }
   else fn:error(xs:QName("INCLUDE-ERROR"),"Invalid path:" || $stylesheet-uri)
 };
-(:~
- :  Creates 
- :)
 declare function engine:transform-image-tag($node)
 {
   let $resource := fn:data($node) ! fn:replace(.,"&quot;","") ! fn:normalize-space(.)
@@ -198,11 +388,9 @@ declare function engine:transform-image-tag($node)
   let $image-uri := 
   fn:concat(
         $image-directory,
-        if(fn:ends-with($image-directory,"/")) 
-        then () 
-        else "/",
-        config:resource-directory(),
-        $resource)
+        if(fn:ends-with($image-directory,"/")) then () else "/",
+        "images/",
+        $resource,".css")
    return 
   if(engine:module-file-exists($image-uri))  
   then element img {
@@ -215,7 +403,7 @@ declare function engine:transform-image-tag($node)
  : Generates a script element for the given controller.  If a controller 
  : script is defined in the template the system will check to see if the
  : file exists on the system before rendering any output
- :)
+~:)
 declare function engine:transform-resource-include($node)
 {
   let $resource := fn:data($node) ! fn:replace(.,"&quot;","") ! fn:normalize-space(.)
@@ -244,14 +432,13 @@ declare function engine:transform-resource-include($node)
          default return fn:error(xs:QName("UNKNOWN-RESOURCE"),"Unknown Resource Error")  
 };
 (:~
- :  Returns a `<ul><li>` list of controllers and their corresponding links
+ :  Returns a list of controllers as a unordered list.
  :  This can be used during app generation to quickly test
  :  New controllers. 
  :)
 declare function engine:transform-controller-list($node)
 {
    let $attributes := xdmp:value(fn:concat("<attributes ", fn:data($node),"/>"))
-   let $base-uri := ($attributes/@base,"/")[1]
    return
    <ul>{
    if($attributes/@uiclass) then attribute class {$attributes/@uiclass} else (),
@@ -262,14 +449,14 @@ declare function engine:transform-controller-list($node)
         return
           <li>
             {if($attributes/@itemclass) then attribute class {$attributes/@itemclass} else ()}
-            <a href="/{$base-uri}/{$controller/@name}/index.html">{(fn:data($controller/@label),fn:data($controller/@name))[1]}</a>
+            <a href="/{$controller/@name}/index.html">{(fn:data($controller/@label),fn:data($controller/@name))[1]}</a>
           </li>   
    else 
         for $controller in domain:get-controllers(request:application())
         return
           <li>
             {if($attributes/@itemclass) then attribute class {$attributes/@itemclass} else ()}
-            <a href="/{$base-uri}/{$controller/@name}/index.html">{(fn:data($controller/@label),fn:data($controller/@name))[1]}</a>
+            <a href="/{$controller/@name}/index.html">{(fn:data($controller/@label),fn:data($controller/@name))[1]}</a>
           </li>
    }</ul>
 };
@@ -296,38 +483,13 @@ declare function engine:transform-controller-link($node) {
    {$text-body}
    </a>
 };
-(:~
- : Custom Transformer handles HTML specific templates and
- : Tags.
- :)
-declare function engine:custom-transform($node as node())
-{  
-   if(engine:visited($node))
-   then  ()    
-   else(
-       typeswitch($node)
-         case processing-instruction("title")              return engine:transform-title($node)
-         case processing-instruction("include-http-metas") return engine:transform-http_metas($node)
-         case processing-instruction("include-metas")      return engine:transform-include_metas($node)
-         case processing-instruction("javascript-include") return engine:transform-javascript-include($node)
-         case processing-instruction("stylesheet-include") return engine:transform-stylesheet-include($node)
-         case processing-instruction("resource-include")   return engine:transform-resource-include($node)
-         case processing-instruction("image-tag")          return engine:transform-image-tag($node)
-         case processing-instruction("controller-script")  return engine:transform-controller-script($node)
-         case processing-instruction("controller-stylesheet") return engine:transform-controller-stylesheet($node)
-         case processing-instruction("controller-list")    return engine:transform-controller-list($node)
-         case processing-instruction("controller-link")    return engine:transform-controller-link($node)
-         case processing-instruction("flash-message")      return engine:transform-flash-message($node)
-         case processing-instruction()                     return engine:transform($node)   
-         default return engine:transform($node)
-     )    
-};
+
 (:~
  : Handles redirection.
  : The redirector will try to ensure a valid route is defined to handle the request
  : If the redirect does not map to an existing route then 
  : will throw invalid redirect error.
- :)
+~:)
 declare function engine:redirect($path)
 {
      let $controller := response:controller()
@@ -344,8 +506,8 @@ declare function engine:redirect($path)
         else fn:error(xs:QName("INVALID-REDIRECT"),"No valid Routes")
 };
 (:~
- : Renders the HTML response and adds response information such as headers and response codes.
- :)
+ : Renders the HTML response.
+~:)
 declare function engine:render()
 {
    if(response:redirect()) 
@@ -372,4 +534,34 @@ declare function engine:render()
           then response:body()
      else ()   
    )
+};
+(:~
+ : Custom Transformer handles HTML specific templates and
+ : Tags.
+~:)
+declare function engine:custom-transform($node as node())
+{  
+   if(engine:visited($node))
+   then  ()    
+   else(
+       typeswitch($node)
+         case processing-instruction("title") return engine:transform-title($node)
+         case processing-instruction("include-http-metas") return engine:transform-http_metas($node)
+         case processing-instruction("include-metas") return engine:transform-include_metas($node)
+         case processing-instruction("javascript-include") return engine:transform-javascript-include($node)
+         case processing-instruction("stylesheet-include") return engine:transform-stylesheet-include($node)
+         case processing-instruction("resource-include") return engine:transform-resource-include($node)
+         case processing-instruction("image-tag") return engine:transform-image-tag($node)
+         case processing-instruction("controller-script") return engine:transform-controller-script($node)
+         case processing-instruction("controller-stylesheet") return engine:transform-controller-stylesheet($node)
+         case processing-instruction("controller-list") return engine:transform-controller-list($node)
+         case processing-instruction("controller-link") return engine:transform-controller-link($node)
+         case processing-instruction("flash-message") return engine:transform-flash-message($node)
+         case processing-instruction("grid")   return engine:transform-grid($node)
+         case processing-instruction("application-script") return engine:transform-application-script($node)
+         case processing-instruction("application-stylesheet") return engine:transform-application-stylesheet($node)
+         case processing-instruction("form") return engine:transform-form($node)    
+         case processing-instruction() return engine:transform($node) 
+         default return engine:transform($node)
+     )    
 };
