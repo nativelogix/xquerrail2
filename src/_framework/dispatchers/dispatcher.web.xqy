@@ -76,7 +76,7 @@ declare function dispatcher:extension-action-exists(
    let $extension := config:controller-extension()
    let $location :=  $extension/@resource
    let $eval := 
-      <node>import module namespace func = "http://xquerrail.com/controller/extension" at '{$location}';
+      <node>import module namespace func = "http://xquerrail.com/controller/extension" at '{fn:data($location)}';
        fn:function-available("func:{$action}",0)
      </node>
    return      
@@ -176,7 +176,7 @@ declare function dispatcher:invoke-controller()
         let $controller-func := xdmp:function(fn:QName($controller-uri,$action),$controller-location)
         return
            $controller-func()
-     else if(dispatcher:extension-exists()) then 
+     else if(dispatcher:extension-exists() and dispatcher:extension-action-exists($action)) then 
           let $extension-action := xdmp:function(xs:QName("extension:" || $action),config:controller-extension()/@resource)
           return 
             $extension-action()
