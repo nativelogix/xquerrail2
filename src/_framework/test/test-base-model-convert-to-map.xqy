@@ -22,82 +22,67 @@ declare variable $TEST-MODEL :=
         <navigation exportable="true" searchable="true" facetable="false" metadata="true" searchType="range"></navigation>
       </element> 
       <element name="field2" type="string" label="Field #2">
-        <navigation exportable="false" searchable="true" facetable="false" metadata="false" searchType="range"></navigation>
-      </element>
+        <navigation exportable="false" searchable="true" facetable="false" metadata="true" searchType="range"></navigation>
+      </element> 
     </container>
     <element name="field3" type="string" label="Field #3">
-      <navigation exportable="true" searchable="true" facetable="false" searchType="range"></navigation>
+      <navigation exportable="true" searchable="true" facetable="false" metadata="true" searchType="range"></navigation>
     </element> 
   </model>
 ;
-
 declare variable $TEST-DOCUMENTS :=
 (
   map:new((
     map:entry("container1.field1", "oscar"),
     map:entry("container1.field2", "best actor"),
-    map:entry("field3", "GARY")
+    map:entry("field3", "123456")
   )),
   map:new((
     map:entry("container1.field1", "oscar"),
     map:entry("container1.field2", "best actor"),
-    map:entry("field3", "gary")
+    map:entry("field3", "654321")
   ))
 );
-
-declare variable $TEST-IMPORT :=
-<results>
-<header>
-  <program>
-    <id>Id</id>
-    <container1.field1>Field #1</container1.field1>
-    <field3>Field #3</field3>
-  </program>
-</header>
-<body>
-  <program id="1234567890" xmlns="http://marklogic.com/metadata">
-    <container1.field1>noah</container1.field1>
-  </program>
-</body>
-</results>;
-
-declare %private function create-items() as empty-sequence() {
-  let $_ := for $doc in $TEST-DOCUMENTS
-    return model:create($TEST-MODEL, $doc)
-  return ()
-};
 
 declare %test:setup function setup() as empty-sequence()
 {
   (
-    xdmp:log("*** SETUP ***"),
-    create-items()
+    xdmp:log("*** SETUP ***")
   )
 };
 
 declare %test:teardown function teardown() as empty-sequence()
 {
   (
-    xdmp:log("*** TEARDOWN ***"),
-    xdmp:directory-delete($TEST-DIRECTORY)
+    xdmp:log("*** TEARDOWN ***")
    )
 };
 
-(: Disabled test as it requires attribute range index to be created :)
-declare %test:ignore function test-search-with-metadata() as item()*
+declare %test:case function test-convert-to-map() as item()*
 {
-  let $params := map:new((
-    map:entry("query", "gary")
-  ))
-  let $results := model:search($TEST-MODEL, $params)
-  let $_ := xdmp:log($results/*:result/*:metadata)
+  let $doc := model:new($TEST-MODEL, $TEST-DOCUMENTS[1])
+  let $_ := xdmp:log($doc)
+  let $map := model:convert-to-map($TEST-MODEL, $doc)
+  let $_ := xdmp:log($map)
   return 
   (
-    assert:not-empty($results),
-    assert:true(fn:exists($results/*:result/*:metadata[1]/*[fn:local-name(.) = "field1"]), "field1 must exist in search response"),
-    assert:false(fn:exists($results/*:result/*:metadata[1]/*[fn:local-name(.) = "field2"]), "field2 should not exist in search response"),
-    assert:false(fn:exists($results/*:result/*:metadata[1]/*[fn:local-name(.) = "field3"]), "field3 should not exist in search response"),
-    assert:equal(fn:count($results/*:result/*:metadata[1]), 2)
+    assert:true(map:contains($map, "container1.field1")),
+    assert:true(map:contains($map, "container1.field2")),
+    assert:false(map:contains($map, "field1")),
+    assert:true(map:contains($map, "field3")),
+    assert:equal(map:count($map), 3)
   )
 };
 
+declare %test:case function test-xml-to-map-to-xml() as item()*
+{
+  let $doc := model:new($TEST-MODEL, $TEST-DOCUMENTS[1])
+  let $map := model:convert-to-map($TEST-MODEL, $doc)
+  let $doc2 := model:new($TEST-MODEL, $map)
+  return 
+  (
+    assert:not-empty($doc),
+    assert:not-empty($doc2),
+    assert:equal($doc, $doc2)
+  )
+};

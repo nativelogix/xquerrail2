@@ -22,11 +22,11 @@ declare variable $TEST-MODEL :=
         <navigation exportable="true" searchable="true" facetable="false" metadata="true" searchType="range"></navigation>
       </element> 
       <element name="field2" type="string" label="Field #2">
-        <navigation exportable="false" searchable="true" facetable="false" metadata="false" searchType="range"></navigation>
+        <navigation exportable="false" searchable="true" facetable="false" metadata="true" searchType="range"></navigation>
       </element>
     </container>
     <element name="field3" type="string" label="Field #3">
-      <navigation exportable="true" searchable="true" facetable="false" searchType="range"></navigation>
+      <navigation exportable="true" searchable="true" facetable="false" metadata="true" searchType="range"></navigation>
     </element> 
   </model>
 ;
@@ -83,21 +83,17 @@ declare %test:teardown function teardown() as empty-sequence()
    )
 };
 
-(: Disabled test as it requires attribute range index to be created :)
-declare %test:ignore function test-search-with-metadata() as item()*
+declare %test:ignore function test-import() as item()*
 {
+  let $_ := model:import($TEST-MODEL, $TEST-IMPORT)
   let $params := map:new((
-    map:entry("query", "gary")
+    map:entry("container1.field1", "oscar")
   ))
-  let $results := model:search($TEST-MODEL, $params)
-  let $_ := xdmp:log($results/*:result/*:metadata)
+  let $doc := model:get($TEST-MODEL, $params)
   return 
   (
-    assert:not-empty($results),
-    assert:true(fn:exists($results/*:result/*:metadata[1]/*[fn:local-name(.) = "field1"]), "field1 must exist in search response"),
-    assert:false(fn:exists($results/*:result/*:metadata[1]/*[fn:local-name(.) = "field2"]), "field2 should not exist in search response"),
-    assert:false(fn:exists($results/*:result/*:metadata[1]/*[fn:local-name(.) = "field3"]), "field3 should not exist in search response"),
-    assert:equal(fn:count($results/*:result/*:metadata[1]), 2)
+    assert:not-empty($doc),
+    assert:equal($doc/*:container1/*:field1/text(), "noah")
   )
 };
 

@@ -686,8 +686,10 @@ declare function domain:get-field-reference-model(
  : The xpath expression is relative to the root of the parent element
  : @param $field - instance of a field
  :)
-declare function domain:get-field-xpath($field as element()) {
-    domain:get-field-xpath($field/ancestor::domain:model,$field/@name)
+declare function domain:get-field-xpath($field) {
+    for $path in $field/ancestor-or-self::*[fn:node-name(.) = $DOMAIN-NODE-FIELDS]
+    return 
+     fn:concat("/*:",$path/@name)
 };
 
 (:~
