@@ -1412,6 +1412,12 @@ declare function model:build-search-options(
             </search:sort-order>
           </search:state>)
           
+      let $extractMetadataOptions := 
+         for $prop in $properties[domain:navigation/@metadata = "true"]
+         let $ns := domain:get-field-namespace($prop)
+         return
+            (<search:qname elem-ns="{$ns}" elem-name="{$prop/@name}"></search:qname>)
+
        (:Implement a base query:)   
        let $persistence := fn:data($domain-model/@persistence)
        let $baseQuery := 
@@ -1444,6 +1450,7 @@ declare function model:build-search-options(
                 }</search:operator>
                 {$baseOptions/search:operator[@name ne "sort"]}
                 {$baseOptions/*[. except $baseOptions/(search:constraint|search:operator|search:suggestion-source)]}
+                <search:extract-metadata>{$extractMetadataOptions}</search:extract-metadata>
              </search:options>
         return $options
 };
