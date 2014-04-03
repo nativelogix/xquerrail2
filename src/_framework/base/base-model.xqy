@@ -756,8 +756,7 @@ declare function model:recursive-build(
         let $localname := fn:data($context/@name)
         let $default   := (fn:data($context/@default),"")[1]
         let $occurrence := ($context/@occurrence,"?")
-        let $map-values := map:get($updates,$key)
-        let $map-values := if($map-values) then $map-values else map:get($updates,$localname)
+        let $map-values := domain:get-field-param-value($context, $updates)
         return 
              if ($context/@type eq "reference" and $context/@reference ne "") then 
                  if($map-values) then              
@@ -854,8 +853,7 @@ declare function model:recursive-build(
         let $localname := fn:data($context/@name)
         let $default   := (fn:data($context/@default),"")[1]
         let $occurrence := ($context/@occurrence,"?")
-        let $map-value := map:get($updates,$key)
-        let $map-value := if($map-value) then $map-value else map:get($updates,$localname)
+        let $map-value := domain:get-field-param-value($context, $updates)
         let $value := $map-value
         return 
           if($value) then 
@@ -1412,6 +1410,12 @@ declare function model:build-search-options(
             </search:sort-order>
           </search:state>)
           
+      let $extractMetadataOptions := 
+         for $prop in $properties[domain:navigation/@metadata = "true"]
+         let $ns := domain:get-field-namespace($prop)
+         return
+            (<search:qname elem-ns="{$ns}" elem-name="{$prop/@name}"></search:qname>)
+
        (:Implement a base query:)   
        let $persistence := fn:data($domain-model/@persistence)
        let $baseQuery := 
@@ -1444,6 +1448,7 @@ declare function model:build-search-options(
                 }</search:operator>
                 {$baseOptions/search:operator[@name ne "sort"]}
                 {$baseOptions/*[. except $baseOptions/(search:constraint|search:operator|search:suggestion-source)]}
+                <search:extract-metadata>{$extractMetadataOptions}</search:extract-metadata>
              </search:options>
         return $options
 };
@@ -1799,6 +1804,21 @@ declare function model:build-params-map-from-body(
     return $params    
 };
 
+declare function model:convert-to-map(
+    $domain-model as element(domain:model), 
+    $current as node()
+) {
+    let $params := map:map()
+    let $_ := 
+      for $field in $domain-model//(domain:element|domain:attribute)
+        let $field-name := domain:get-field-name-key($field)
+        let $xpath := fn:string-join(domain:get-field-xpath($field), "")
+        let $value := xdmp:value("$current" || $xpath || "/text()")
+        return 
+          map:put($params, domain:get-field-name-key($field), $value)
+    return $params
+};
+
 (:~
  :  Builds the value for a given field type.  
  :  This ensures that the proper values are set for the given field
@@ -1990,3 +2010,98 @@ declare function model:build-find-and-update-params(
        (:Collection:)case "c" return 
   return $update-map 
 };:)
+
+declare function model:export(
+  $model as element(domain:model),
+  $params as map:map
+) as element(results) {
+  model:export($model, $params, ())
+};
+
+(:~
+ : Returns if the passed in _query param will be used as search criteria
+ : $params support all model:list-params parameters
+ : $fields optional return field list (must be marked as exportable=true)
+~:)
+declare function model:export(
+  $model as element(domain:model),
+  $params as map:map,
+  $fields as xs:string?
+) as element(results) {
+  let $results := model:list($model, $params)
+  let $filter-mod := $model
+  let $convert-attributes := xs:boolean(map:get($params, "_convert-attributes"))
+  let $export-fields := (
+    domain:get-field-name-key(domain:get-model-identity-field($model)),
+    if ($fields) then 
+      for $field in $model//*[domain:navigation/@exportable="true" and domain:get-field-name-key(.) = $fields]
+      return
+        domain:get-field-name-key($field)
+    else 
+      for $field in $model//*[domain:navigation/@exportable="true"](:/@name:)
+      return
+        domain:get-field-name-key($field)
+  )
+  return
+    element results {
+    element header {
+      element {fn:QName(domain:get-field-namespace($filter-mod),$filter-mod/@name)} {
+        for $field in $filter-mod//(domain:element|domain:attribute)[domain:get-field-name-key(.) = $export-fields]
+        return element {fn:QName(domain:get-field-namespace($field), domain:get-field-name-key($field))} {fn:data($field/@label)}
+      }
+    },
+    element body {
+      for $f in $results/*[fn:local-name(.) eq $filter-mod/@name]
+      return
+        element {fn:node-name($f)} {
+          convert-attributes-to-elements(domain:get-field-namespace($filter-mod), $f/@*[name(.) = $export-fields], $convert-attributes),
+          serialize-to-flat-xml(domain:get-field-namespace($f), $model, $f)[fn:local-name(.) = $export-fields]
+        }
+    }
+  }
+
+};
+
+declare %private function convert-attributes-to-elements($namespace as xs:string, $attributes, $convert-attributes) {
+  if ($convert-attributes) then
+    for $attribute in $attributes
+    return
+      element {fn:QName($namespace, fn:name($attribute))} {xs:string($attribute)}
+  else
+    $attributes
+};
+
+declare %private function serialize-to-flat-xml(
+  $namespace as xs:string,
+  $model as element(domain:model),
+  $current as node()
+) {
+  let $map := model:convert-to-map($model, $current)
+  return
+    for $key in map:keys($map)
+    return
+      element { fn:QName($namespace, $key) } { map:get($map, $key) }
+};
+
+declare %private function convert-flat-xml-to-map(
+  $model as element(domain:model),
+  $current as node()
+) as map:map {
+  map:new((
+    map:entry(domain:get-field-name-key(domain:get-model-identity-field($model)), domain:get-field-value(domain:get-model-identity-field($model), $current)),
+    for $field in $current/*
+    return
+      map:entry(fn:local-name($field), $field/text()) 
+  ))
+};
+
+declare function model:import(
+  $model as element(domain:model),
+  $dataset as element(results)
+) as empty-sequence() {
+  let $_ :=
+    for $doc in $dataset/body/*
+      let $map := convert-flat-xml-to-map($model, $doc)
+      return model:update-partial($model, $map)
+  return ()
+};
