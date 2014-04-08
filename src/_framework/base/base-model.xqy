@@ -103,7 +103,7 @@ declare function model:generate-uuid($seed as xs:integer?)
 as xs:string
 {
   let $hash := (:Assume FIPS is installed by default:)
-    if(fn:starts-with(xdmp:version(),"6"))
+    if(fn:tokenize(xdmp:version(),"\.")[1] > "6")
     then xdmp:apply(xdmp:function(xs:QName("xdmp:hmac-sha1")),"uuid",fn:string($seed))
     else xdmp:apply(xdmp:function(xs:QName("xdmp:sha1")),fn:string($seed))
   let $guid := fn:replace($hash,"(\c{8})(\c{4})(\c{4})(\c{4})(\c{12})","$1-$2-$3-$4-$5")
@@ -115,7 +115,17 @@ as xs:string
  :)
 declare function model:generate-uuid() as xs:string
 {
-    model:generate-uuid(xdmp:random()) 
+   switch(config:identity-scheme())
+    case "id" return model:generate-fnid(xdmp:random())
+    default return model:generate-uuid(xdmp:random()) 
+};
+
+(:~
+ : Creates an ID for an element using fn:generate-id.   This corresponds to the config:identity-scheme
+ :)
+declare function model:generate-fnid($instance as item()) {
+  if($instance instance of element()) then fn:generate-id($instance)
+  else fn:generate-id(<_instance_>{$instance}</_instance_>)
 };
 
 (:~
