@@ -534,3 +534,12 @@ declare function config:controller-base-path()  as xs:string
    $CONFIG/config:controller-base-path/@value,
     "/controller/")[1]
 };
+(:~
+ : Returns the default identity scheme for all applications
+ :)
+ declare function config:identity-scheme() as xs:string {
+    (
+     $CONFIG/config:default-identity-scheme/@value,
+    "uuid"
+    )[1]
+ };

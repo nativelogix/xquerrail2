@@ -252,8 +252,8 @@ declare function model:build-json(
         let $field-value := domain:get-field-value($field,$instance)
         return       
         if($field/domain:attribute) then 
-           js:entry($field/@name,(
-               js:entry("_attributes",
+           js:kv($field/@name,(
+               js:kv("_attributes",
                  for $field in $field/(domain:attribute)
                  return 
                    model:build-json($field,$instance)
@@ -274,7 +274,7 @@ declare function model:build-json(
                         js:kv("type",fn:string($ref/@ref))
                      ))
                  ))
-              else js:entry($field/@name,for $ref in $field-value return $ref)              
+              else js:kv($field/@name,for $ref in $field-value return $ref)              
      else if($field/@reference and $field/@type eq "reference") then
          let $value := domain:get-field-value($field,$instance)
          return 
@@ -290,7 +290,7 @@ declare function model:build-json(
         let $value := domain:get-field-value($field,$instance)
         return 
             if($value) then 
-                js:entry($field/@name,(
+                js:kv($field/@name,(
                         js:kv("uri", fn:string($field-value)),
                         js:kv("filename", fn:data($field-value/@filename)),
                         js:kv("contentType",fn:data($field-value/@content-type))
@@ -304,7 +304,7 @@ declare function model:build-json(
          return        
              js:kv(fn:concat("@",$field/@name),$field-value)
      case element(domain:container) return 
-         js:entry($field/@name, (
+         js:kv($field/@name, js:o(
             for $field in $field/domain:element
             return model:build-json($field,$instance)
           ))
