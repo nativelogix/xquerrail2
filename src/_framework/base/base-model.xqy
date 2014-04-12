@@ -1822,7 +1822,7 @@ declare function model:convert-to-map(
     let $_ := 
       for $field in $domain-model//(domain:element|domain:attribute)
         let $field-name := domain:get-field-name-key($field)
-        let $xpath := fn:string-join(domain:get-field-xpath($field), "")
+        let $xpath := domain:get-field-xpath($field)
         let $value := xdmp:value("$current" || $xpath || "/text()")
         return 
           map:put($params, domain:get-field-name-key($field), $value)

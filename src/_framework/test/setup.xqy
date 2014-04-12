@@ -1,9 +1,8 @@
 xquery version "1.0-ml";
 module namespace setup = "http://xquerrail.com/test/setup";
 
-import module namespace domain  = "http://xquerrail.com/domain"      at "/_framework/domain.xqy";
-import module namespace model   = "http://xquerrail.com/model/base"  at "/_framework/base/base-model.xqy";
-import module namespace admin = "http://marklogic.com/xdmp/admin"  at "/MarkLogic/admin.xqy";
+declare namespace metadata = "http://marklogic.com/metadata";
+declare namespace domain = "http://xquerrail.com/domain";
 
 declare %private variable $USE-MODULES-DB := (xdmp:modules-database() ne 0);
 
@@ -15,9 +14,8 @@ declare %private function bootstrap-model($model as element(domain:model)
     let $model-name := $model/@name
     let $identity-field := domain:get-model-identity-field($model)
     let $identity-type := "string"
-    let $identity-name := $identity-field/@name
-    let $namespace := domain:get-field-namespace($identity-field)
-    let $collation := domain:get-field-collation($identity-field)
+    let $namespace := domain:get-field-namespace($identity)
+    let $collation := domain:get-field-collation($identity)
     let $config := admin:get-configuration()
     let $database-id := xdmp:database()
     let $spec :=
@@ -29,7 +27,7 @@ declare %private function bootstrap-model($model as element(domain:model)
             admin:database-range-element-index(
               $identity-type,
               $namespace,
-              $identity-name,
+              $identity-field/@name,
               $collation,
               fn:false()
             )
@@ -43,20 +41,17 @@ declare %private function bootstrap-model($model as element(domain:model)
               $namespace,
               $model-name,
               (),
-              $identity-name,
+              $identity-field/@name,
               $collation,
               fn:false()
             )
           )
-    default return fn:error(xs:QName("UNSUPPORTED-IDENTITY-FIELD"), "Unsupported indentity field [" || $identity-name || "]")
+    default return ()
     
     return
       admin:save-configuration($spec)
 	} catch * {
-    if (fn:starts-with($err:description, "ADMIN-DUPLICATECONFIGITEM")) then
-      ()
-    else
-      xdmp:log("bootstrap-model - Error description [" || $err:description || "]", "warning")
+    xdmp:log("bootstrap-model - Error description [" || $err:description || "]", "warning")
 	}
 };
 
