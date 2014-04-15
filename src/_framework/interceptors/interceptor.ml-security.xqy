@@ -14,7 +14,7 @@ declare function ml-security:name()
 
 
 declare function ml-security:is-anonymous($configuration as element(config:config)) {
-  fn:exists(ml-security:get-roles()[. = $configuration/config:anonymous-user/@value])
+  fn:exists(ml-security:get-roles()[. = config:anonymous-user()])
 };
 
 declare function ml-security:get-roles()
@@ -55,10 +55,11 @@ declare function ml-security:after-request(
              )          
          else fn:false()
      let $_ := xdmp:log(("context:", $context," scope::", $scope))
+     let $authorization := xdmp:get-request-header("Authorization") 
      return 
        if($bypassed) then ()  
        else 
-       if(xdmp:get-request-header("Authorization")) then 
+       if($authorization and fn:starts-with($authorization, "Basic ")) then 
           let $user := xdmp:get-request-username()
           let $password := 
              fn:substring-after(

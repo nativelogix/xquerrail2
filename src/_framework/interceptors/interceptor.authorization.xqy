@@ -14,7 +14,7 @@ declare function authorization:name()
 
 
 declare function authorization:is-anonymous($configuration as element(config:config)) {
-  fn:exists(authorization:get-roles()[. = $configuration/config:anonymous-user/@value])
+  fn:exists(authorization:get-roles()[. = config:anonymous-user()])
 };
 
 declare function authorization:get-roles()
