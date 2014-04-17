@@ -687,9 +687,7 @@ declare function domain:get-field-reference-model(
  : @param $field - instance of a field
  :)
 declare function domain:get-field-xpath($field) {
-    for $path in $field/ancestor-or-self::*[fn:node-name(.) = $DOMAIN-NODE-FIELDS]
-    return 
-     fn:concat("/*:",$path/@name)
+  domain:get-field-xpath($field/ancestor::domain:model, domain:get-field-id($field))
 };
 
 (:~
@@ -712,7 +710,10 @@ declare function domain:get-field-xpath(
  : @param $level - Number of parent levels to traverse for xpath expression. 
  :)
 declare function domain:get-field-xpath($model, $key, $level) { 
-     let $elementField := $model/descendant-or-self::*[fn:node-name(.) = $DOMAIN-NODE-FIELDS][$key = domain:get-field-id(.)]    
+     let $elementField := (
+      $model/descendant-or-self::*[fn:node-name(.) = $DOMAIN-NODE-FIELDS][$key = domain:get-field-id(.)],
+      domain:get-field-from-dotted-path($model, $key)
+     )[1]
      (:let $level := if($elementField instance of element(domain:attribute)) then 1 else $level:)
      let $ns := domain:get-field-namespace($model) 
      let $path := 
@@ -814,6 +815,23 @@ declare function domain:get-model-by-xpath(
         else ()
     
     return $key
+};
+
+declare function domain:get-field-value-from-dotted-path($model as element(domain:model), $name as xs:string, $instance as node()?) as element()? {
+  domain:get-field-value(domain:get-field-from-dotted-path($model, $name), $instance)
+};
+
+declare function domain:get-field-from-dotted-path($field as element(), $name as xs:string) as element()? {
+  if (fn:contains($name, '.')) then
+    let $parent := fn:substring-before($name, '.')
+    let $new := $field/descendant-or-self::*[fn:node-name(.) = $domain:DOMAIN-NODE-FIELDS][$parent = ./@name]
+    return
+    if ($new) then
+      domain:get-field-from-dotted-path($new, fn:substring-after($name, '.'))
+    else
+      ()
+  else
+    $field/descendant-or-self::*[fn:node-name(.) = $domain:DOMAIN-NODE-FIELDS][$name = ./@name]
 };
 
 (:~
